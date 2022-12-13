@@ -1,17 +1,20 @@
 from yacs.config import CfgNode as CN
 from .utils import log_msg
 
+def dump_cfg(cfg):
+    dumped_cfg = CN()
+    dumped_cfg.EXPERIMENT = cfg.EXPERIMENT
+    dumped_cfg.DATASET = cfg.DATASET
+    dumped_cfg.DISTILLER = cfg.DISTILLER
+    dumped_cfg.SOLVER = cfg.SOLVER
+    dumped_cfg.LOG = cfg.LOG
+    if cfg.DISTILLER.TYPE in cfg:
+        dumped_cfg.update({cfg.DISTILLER.TYPE: cfg.get(cfg.DISTILLER.TYPE)})
+    return dumped_cfg
 
 def show_cfg(cfg):
-    dump_cfg = CN()
-    dump_cfg.EXPERIMENT = cfg.EXPERIMENT
-    dump_cfg.DATASET = cfg.DATASET
-    dump_cfg.DISTILLER = cfg.DISTILLER
-    dump_cfg.SOLVER = cfg.SOLVER
-    dump_cfg.LOG = cfg.LOG
-    if cfg.DISTILLER.TYPE in cfg:
-        dump_cfg.update({cfg.DISTILLER.TYPE: cfg.get(cfg.DISTILLER.TYPE)})
-    print(log_msg("CONFIG:\n{}".format(dump_cfg.dump()), "INFO"))
+    dumped_cfg = dump_cfg(cfg)
+    print(log_msg("CONFIG:\n{}".format(dumped_cfg.dump()), "INFO"))
 
 
 CFG = CN()

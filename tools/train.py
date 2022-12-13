@@ -11,7 +11,7 @@ from mdistiller.distillers import distiller_dict
 from mdistiller.dataset import get_dataset
 from mdistiller.engine.utils import load_checkpoint, log_msg
 from mdistiller.engine.cfg import CFG as cfg
-from mdistiller.engine.cfg import show_cfg
+from mdistiller.engine.cfg import show_cfg, dump_cfg
 from mdistiller.engine import trainer_dict
 
 
@@ -23,13 +23,13 @@ def main(cfg, resume, opts):
     if opts:
         addtional_tags = ["{}:{}".format(k, v) for k, v in zip(opts[::2], opts[1::2])]
         tags += addtional_tags
-        experiment_name += ",".join(addtional_tags)
+        experiment_name += "|"+",".join(addtional_tags)
     experiment_name = os.path.join(cfg.EXPERIMENT.PROJECT, experiment_name)
     if cfg.LOG.WANDB:
         try:
             import wandb
 
-            wandb.init(project=cfg.EXPERIMENT.PROJECT, name=experiment_name, tags=tags)
+            wandb.init(project=cfg.EXPERIMENT.PROJECT, name=experiment_name, tags=tags, config=dump_cfg(cfg))
         except:
             print(log_msg("Failed to use WANDB", "INFO"))
             cfg.LOG.WANDB = False
