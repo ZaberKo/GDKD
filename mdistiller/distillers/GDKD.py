@@ -5,6 +5,26 @@ import torch.nn.functional as F
 from ._base import Distiller
 
 
+def get_masks(logits):
+    ranks = logits.argsort(dim=-1)
+    # use top 5 from teacher
+    ranks = ranks[:, :5]
+
+    # top 5 mask
+    mask_u1 = torch.zeros_like(logits).scatter_(1, ranks, 1).bool()
+    # other mask
+    mask_u2 = torch.logical_not(mask_u1)
+
+    return mask_u1, mask_u2
+
+
+def cat_mask(t, mask1, mask2):
+    t1 = (t * mask1).sum(dim=1, keepdims=True)
+    t2 = (t * mask2).sum(dim=1, keepdims=True)
+    rt = torch.cat([t1, t2], dim=1)  # [B, 2]
+    return rt
+
+
 def gdkd_loss(logits_student, logits_teacher, target, w0, w1, w2, temperature):
     batch_size = target.shape[0]
 
@@ -17,7 +37,7 @@ def gdkd_loss(logits_student, logits_teacher, target, w0, w1, w2, temperature):
     p0_student = cat_mask(p_student, mask_u1, mask_u2)
     p0_teacher = cat_mask(p_teacher, mask_u1, mask_u2)
 
-    # TODO: why use KL? Try CE
+    # TODO: why use KL? Try CE (adding a constant)
     log_p0_student = torch.log(p0_student)
     loss0 = (
         F.kl_div(log_p0_student, p0_teacher, reduction="batchmean")
@@ -49,25 +69,6 @@ def gdkd_loss(logits_student, logits_teacher, target, w0, w1, w2, temperature):
     )
 
     return w0 * loss0 + w1 * loss1 + w2 * loss2
-
-
-def get_masks(logits):
-    ranks = logits.argsort(dim=-1)
-    # use top 5 from teacher
-    ranks = ranks[:, :5]
-
-
-    mask_u1 = torch.zeros_like(logits).scatter_(1, ranks, 1).bool()
-    mask_u2 = torch.logical_not(mask_u1)
-
-    return mask_u1, mask_u2
-
-
-def cat_mask(t, mask1, mask2):
-    t1 = (t * mask1).sum(dim=1, keepdims=True)
-    t2 = (t * mask2).sum(dim=1, keepdims=True)
-    rt = torch.cat([t1, t2], dim=1)
-    return rt
 
 
 class GDKD(Distiller):
