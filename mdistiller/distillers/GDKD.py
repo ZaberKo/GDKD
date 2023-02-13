@@ -5,10 +5,16 @@ import torch.nn.functional as F
 from ._base import Distiller
 
 
-def get_masks(logits):
+def get_masks(logits, k=5, strategy="best"):
     ranks = logits.argsort(dim=-1)
-    # use top 5 from teacher
-    ranks = ranks[:, :5]
+
+    if strategy == "best":
+        # use top k from teacher
+        ranks = ranks[:, -k:]
+    elif strategy == "worst":
+        ranks = ranks[:, :k]
+    else:
+        raise ValueError(f"Unknown strategy: {strategy}")
 
     # top 5 mask
     mask_u1 = torch.zeros_like(logits).scatter_(1, ranks, 1).bool()
@@ -25,10 +31,10 @@ def cat_mask(t, mask1, mask2):
     return rt
 
 
-def gdkd_loss(logits_student, logits_teacher, target, w0, w1, w2, temperature):
+def gdkd_loss(logits_student, logits_teacher, target, k, strategy, w0, w1, w2, temperature):
     batch_size = target.shape[0]
 
-    mask_u1, mask_u2 = get_masks(logits_teacher)
+    mask_u1, mask_u2 = get_masks(logits_teacher, k, strategy)
 
     p_student = F.softmax(logits_student / temperature, dim=1)
     p_teacher = F.softmax(logits_teacher / temperature, dim=1)
@@ -82,6 +88,8 @@ class GDKD(Distiller):
         self.w2 = cfg.GDKD.W2
         self.temperature = cfg.GDKD.T
         self.warmup = cfg.GDKD.WARMUP
+        self.k = cfg.GDKD.topk
+        self.strategy = cfg.GDKD.strategy
 
     def forward_train(self, image, target, **kwargs):
         logits_student, _ = self.student(image)
@@ -94,6 +102,8 @@ class GDKD(Distiller):
             logits_student,
             logits_teacher,
             target,
+            self.k,
+            self.strategy,
             self.w0,
             self.w1,
             self.w2,

@@ -5,6 +5,13 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "logits_dist",
+            "type": "python",
+            "request": "launch",
+            "module": "exp.calc_dataset_logits_dist",
+            "justMyCode": true
+        },
+        {
             "name": "Train",
             "type": "python",
             "request": "launch",
@@ -12,7 +19,12 @@
             "module": "tools.train",
             "console": "integratedTerminal",
             "justMyCode": false,
-            "args": ["--cfg", "configs/cifar100/gdkd/res32x4_res8x4.yaml", "LOG.WANDB", "False"]
+            "args": [
+                "--cfg",
+                "configs/cifar100/gdkd/res32x4_res8x4.yaml",
+                "LOG.WANDB",
+                "False"
+            ]
         }
     ]
 }

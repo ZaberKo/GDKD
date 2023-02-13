@@ -6,12 +6,14 @@ import torch
 from tools.train import main as train
 from mdistiller.engine.cfg import CFG as cfg
 
+
 def run(cfg, resume, opts, gpu_id):
     os.environ["CUDA_VISIBLE_DEVICES"] = str(gpu_id)
-    
+
     # torch.cuda.set_device()
 
     train(cfg, resume, opts)
+
 
 if __name__ == "__main__":
     import argparse
@@ -27,15 +29,15 @@ if __name__ == "__main__":
     cfg.merge_from_list(args.opts)
     cfg.freeze()
 
-    gpu_ids=[0]
-    gpu_cnt=0
+    gpu_ids = [0]
+    gpu_cnt = 0
 
     print("num_tests: ", args.num_tests)
 
-    pendings=[]
+    pendings = []
     for i in range(args.num_tests):
         print(f"Start test {i}, use GPU {gpu_ids[gpu_cnt]}")
-        p = mp.Process(target=run,kwargs=dict(
+        p = mp.Process(target=run, kwargs=dict(
             cfg=cfg,
             resume=args.resume,
             opts=args.opts,
@@ -43,9 +45,7 @@ if __name__ == "__main__":
         ))
         p.start()
         pendings.append(p)
-        gpu_cnt=(gpu_cnt+1)%len(gpu_ids)
+        gpu_cnt = (gpu_cnt+1) % len(gpu_ids)
 
     for p in pendings:
         p.join()
-
-

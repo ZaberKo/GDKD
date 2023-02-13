@@ -124,3 +124,6 @@ wandb/
 
 # download ckpts
 download_ckpts/
+
+# exp folder:
+exp/
