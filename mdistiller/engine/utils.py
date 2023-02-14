@@ -62,6 +62,7 @@ def validate(val_loader, distiller):
 def log_msg(msg, mode="INFO"):
     color_map = {
         "INFO": 36,
+        "ERROR": 91,
         "TRAIN": 32,
         "EVAL": 31,
     }

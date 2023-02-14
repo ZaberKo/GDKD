@@ -5,6 +5,22 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "train_dist",
+            "type": "python",
+            "request": "launch",
+            "program": "train_dist.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "--cfg",
+                "configs/cifar100/kd.yaml",
+                "--num_tests",
+                "3",
+                "LOG.WANDB",
+                "False"
+            ]
+        },
+        {
             "name": "logits_dist",
             "type": "python",
             "request": "launch",

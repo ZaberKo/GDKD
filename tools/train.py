@@ -25,7 +25,7 @@ def main(cfg, resume, opts, group_flag=False):
         tags += addtional_tags
         experiment_name += "|"+",".join(addtional_tags)
 
-    experiment_name = f"{cfg.EXPERIMENT.PROJECT}/ {experiment_name}"
+    experiment_name = f"{cfg.EXPERIMENT.PROJECT}/{experiment_name}"
     if cfg.LOG.WANDB:
         try:
             import wandb
@@ -39,7 +39,7 @@ def main(cfg, resume, opts, group_flag=False):
             )
         except:
             print(log_msg("Failed to use WANDB", "INFO"))
-            cfg.LOG.WANDB = False
+            # cfg.LOG.WANDB = False
 
     # cfg & loggers
     show_cfg(cfg)
