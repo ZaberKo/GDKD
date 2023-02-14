@@ -50,6 +50,7 @@ def gdkd_loss(logits_student, logits_teacher, target, k, strategy, w0, w1, w2, t
         * (temperature**2)
     )
 
+    # topk loss
     p1_student = F.log_softmax(
         logits_student / temperature - 1000.0 * mask_u2, dim=1
     )
@@ -62,6 +63,7 @@ def gdkd_loss(logits_student, logits_teacher, target, k, strategy, w0, w1, w2, t
         * (temperature**2)
     )
 
+    # other classes loss
     p2_student = F.log_softmax(
         logits_student / temperature - 1000.0 * mask_u1, dim=1
     )
