@@ -15,9 +15,8 @@ def run(cfg, resume, opts, worker_id, gpu_id):
     # torch.cuda.set_device()
     try:
         train(cfg, resume, opts, group_flag=True)
-    except (Exception,KeyboardInterrupt) as e:
+    except (Exception, KeyboardInterrupt) as e:
         print(log_msg(f"worker {worker_id} fail: {e}", "ERROR"))
-    finally:
         if cfg.LOG.WANDB:
             try:
                 import wandb
@@ -25,7 +24,14 @@ def run(cfg, resume, opts, worker_id, gpu_id):
             except Exception as e:
                 print(
                     log_msg(f"worker {worker_id} failed to exit wandb: {e}", "ERROR"))
-
+    else:
+        if cfg.LOG.WANDB:
+            try:
+                import wandb
+                wandb.finish(exit_code=0)
+            except Exception as e:
+                print(
+                    log_msg(f"worker {worker_id} failed to exit wandb: {e}", "ERROR"))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("training for knowledge distillation.")
