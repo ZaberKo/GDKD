@@ -1,4 +1,4 @@
- EXPERIMENT:
+EXPERIMENT:
   NAME: ""
   TAG: "dkd,res34,res18"
   PROJECT: "imagenet_baselines"
