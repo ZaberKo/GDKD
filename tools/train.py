@@ -39,7 +39,9 @@ def main(cfg, resume, opts, group_flag=False):
             )
         except:
             print(log_msg("Failed to use WANDB", "INFO"))
-            # cfg.LOG.WANDB = False
+            cfg.defrost()
+            cfg.LOG.WANDB = False
+            cfg.freeze()
 
     # cfg & loggers
     show_cfg(cfg)
