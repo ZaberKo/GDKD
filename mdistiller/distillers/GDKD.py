@@ -90,8 +90,8 @@ class GDKD(Distiller):
         self.w2 = cfg.GDKD.W2
         self.temperature = cfg.GDKD.T
         self.warmup = cfg.GDKD.WARMUP
-        self.k = cfg.GDKD.topk
-        self.strategy = cfg.GDKD.strategy
+        self.k = cfg.GDKD.TOPK
+        self.strategy = cfg.GDKD.STRATEGY
 
     def forward_train(self, image, target, **kwargs):
         logits_student, _ = self.student(image)
