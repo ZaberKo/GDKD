@@ -109,6 +109,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser("training for knowledge distillation.")
     parser.add_argument("--cfg", type=str, default="")
+    parser.add_argument("--group", action="store_true")
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("opts", default=None, nargs=argparse.REMAINDER)
 
@@ -116,4 +117,4 @@ if __name__ == "__main__":
     cfg.merge_from_file(args.cfg)
     cfg.merge_from_list(args.opts)
     cfg.freeze()
-    main(cfg, args.resume, args.opts)
+    main(cfg, args.resume, args.opts, args.group)

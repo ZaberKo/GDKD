@@ -1,37 +1,21 @@
 import argparse
 
-import time
-import ray
 import os
+import subprocess
+from concurrent.futures import ProcessPoolExecutor, as_completed
 
 from tools.train import main as train
 from mdistiller.engine.cfg import CFG as cfg
 from mdistiller.engine.utils import log_msg
 
-@ray.remote
-def run(cfg, resume, opts, worker_id, gpu_id):
-    os.environ["CUDA_VISIBLE_DEVICES"] = str(gpu_id)
 
-    # torch.cuda.set_device()
-    try:
-        train(cfg, resume, opts, group_flag=True)
-    except (Exception, KeyboardInterrupt) as e:
-        print(log_msg(f"worker {worker_id} fail: {e}", "ERROR"))
-        if cfg.LOG.WANDB:
-            try:
-                import wandb
-                wandb.finish(exit_code=1)
-            except Exception as e:
-                print(
-                    log_msg(f"worker {worker_id} failed to exit wandb: {e}", "ERROR"))
-    else:
-        if cfg.LOG.WANDB:
-            try:
-                import wandb
-                wandb.finish(exit_code=0)
-            except Exception as e:
-                print(
-                    log_msg(f"worker {worker_id} failed to exit wandb: {e}", "ERROR"))
+def run(cmds, gpu_id):
+    cmds = cmds.copy()
+    cmds.insert(0, f"CUDA_VISIBLE_DEVICES={gpu_id}")
+    cmd_str = " ".join(cmds)
+    print(f'Running: {cmd_str}')
+    subprocess.run(cmd_str, shell=True, check=True)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("training for knowledge distillation.")
@@ -45,34 +29,36 @@ if __name__ == "__main__":
     cfg.merge_from_list(args.opts)
     cfg.freeze()
 
-    gpu_ids = [0]
+    gpu_ids=os.environ.get("CUDA_VISIBLE_DEVICES", "0").split(",")
+    gpu_ids=[int(i) for i in gpu_ids]
+
     gpu_cnt = 0
 
     print("num_tests:", args.num_tests)
 
-    ray.init(num_cpus=args.num_tests)
+    cmds = ["python", "-m", "tools.train",
+            "--cfg", args.cfg, "--group"]
+    if args.resume:
+        cmds.append("--resume")
+    cmds.extend(args.opts)
+
+    executor = ProcessPoolExecutor(args.num_tests)
 
     try:
         tasks = []
         for i in range(args.num_tests):
-            print(f"Start test {i}, use GPU {gpu_ids[gpu_cnt]}")
             tasks.append(
-                run.remote(
-                    cfg=cfg,
-                    resume=args.resume,
-                    opts=args.opts,
-                    worker_id=i,
-                    gpu_id=gpu_ids[gpu_cnt]
-                )
+                executor.submit(run, cmds, gpu_id=gpu_ids[gpu_cnt])
             )
+
             gpu_cnt = (gpu_cnt+1) % len(gpu_ids)
 
-        # join
-        ray.wait(tasks, num_returns=len(tasks))
-    except:
+        for future in as_completed(tasks):
+            future.result()
+
+    except BaseException as e:
+        print(e)
+        # mostly handle keyboard interrupt
         print(log_msg("Training failed", "ERROR"))
     finally:
-        for task in tasks:
-            ray.cancel(task)
-        time.sleep(30)
-    ray.shutdown()
+        executor.shutdown(wait=True)
