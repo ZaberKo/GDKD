@@ -25,7 +25,8 @@ def main(cfg, resume, opts, group_flag=False, id=""):
         tags += addtional_tags
         experiment_name += "|"+",".join(addtional_tags)
 
-    experiment_name = f"{cfg.EXPERIMENT.PROJECT}/{experiment_name}"
+    # experiment_name = f"{cfg.EXPERIMENT.PROJECT}/{experiment_name}"
+    experiment_name = cfg.EXPERIMENT.PROJECT + "/" + experiment_name
     if cfg.LOG.WANDB:
         try:
             import wandb
@@ -35,7 +36,7 @@ def main(cfg, resume, opts, group_flag=False, id=""):
                 name=experiment_name,
                 tags=tags,
                 config=dump_cfg(cfg),
-                group=f"{experiment_name}_group" if group_flag else None,
+                group=experiment_name+"_group" if group_flag else None,
             )
         except:
             print(log_msg("Failed to use WANDB", "INFO"))
@@ -99,7 +100,7 @@ def main(cfg, resume, opts, group_flag=False, id=""):
 
     # training
     if len(id):
-        experiment_name=experiment_name+"_"+id
+        experiment_name = experiment_name+"_"+id
 
     trainer = trainer_dict[cfg.SOLVER.TRAINER](
         experiment_name, distiller, train_loader, val_loader, cfg
@@ -113,7 +114,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser("training for knowledge distillation.")
     parser.add_argument("--cfg", type=str, default="")
     parser.add_argument("--group", action="store_true")
-    parser.add_argument("--id", type=str, default="", help="identifier for training instance")
+    parser.add_argument("--id", type=str, default="",
+                        help="identifier for training instance")
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("opts", default=None, nargs=argparse.REMAINDER)
 
