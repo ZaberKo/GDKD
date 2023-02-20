@@ -32,7 +32,8 @@ class BaseTrainer(object):
         self.log_path = os.path.join(cfg.LOG.PREFIX, experiment_name)
         if not os.path.exists(self.log_path):
             os.makedirs(self.log_path)
-        self.tf_writer = SummaryWriter(os.path.join(self.log_path, "train.events"))
+        self.tf_writer = SummaryWriter(
+            os.path.join(self.log_path, "train.events"))
 
     def init_optimizer(self, cfg):
         if cfg.SOLVER.TYPE == "SGD":
@@ -55,7 +56,9 @@ class BaseTrainer(object):
         if self.cfg.LOG.WANDB:
             import wandb
 
-            wandb.log({"current lr": lr})
+            wandb_log_dict = {"current lr": lr, **log_dict}
+
+            # wandb.log({"current lr": lr})
             wandb.log(log_dict)
         if log_dict["test_acc"] > self.best_acc:
             self.best_acc = log_dict["test_acc"]
@@ -109,7 +112,8 @@ class BaseTrainer(object):
         pbar.close()
 
         # validate
-        test_acc, test_acc_top5, test_loss = validate(self.val_loader, self.distiller)
+        test_acc, test_acc_top5, test_loss = validate(
+            self.val_loader, self.distiller)
 
         # log
         log_dict = OrderedDict(
@@ -160,7 +164,8 @@ class BaseTrainer(object):
         index = index.cuda(non_blocking=True)
 
         # forward
-        preds, losses_dict = self.distiller(image=image, target=target, epoch=epoch)
+        preds, losses_dict = self.distiller(
+            image=image, target=target, epoch=epoch)
 
         # backward
         loss = sum([l.mean() for l in losses_dict.values()])
@@ -170,7 +175,8 @@ class BaseTrainer(object):
         # collect info
         batch_size = image.size(0)
         acc1, acc5 = accuracy(preds, target, topk=(1, 5))
-        train_meters["losses"].update(loss.cpu().detach().numpy().mean(), batch_size)
+        train_meters["losses"].update(
+            loss.cpu().detach().numpy().mean(), batch_size)
         train_meters["top1"].update(acc1[0], batch_size)
         train_meters["top5"].update(acc5[0], batch_size)
         # print info
@@ -210,7 +216,8 @@ class CRDTrainer(BaseTrainer):
         # collect info
         batch_size = image.size(0)
         acc1, acc5 = accuracy(preds, target, topk=(1, 5))
-        train_meters["losses"].update(loss.cpu().detach().numpy().mean(), batch_size)
+        train_meters["losses"].update(
+            loss.cpu().detach().numpy().mean(), batch_size)
         train_meters["top1"].update(acc1[0], batch_size)
         train_meters["top5"].update(acc5[0], batch_size)
         # print info
