@@ -37,7 +37,7 @@ if __name__ == "__main__":
     print("num_tests:", args.num_tests)
 
     cmds = ["python", "-m", "tools.train",
-            "--cfg", args.cfg, "--group"]
+            "--cfg", args.cfg, "--group", "--id", ""]
     if args.resume:
         cmds.append("--resume")
     cmds.extend(args.opts)
@@ -47,8 +47,11 @@ if __name__ == "__main__":
     try:
         tasks = []
         for i in range(args.num_tests):
+            _cmds = cmds.copy()
+            _cmds[7] = str(i)
+
             tasks.append(
-                executor.submit(run, cmds, gpu_id=gpu_ids[gpu_cnt])
+                executor.submit(run, _cmds, gpu_id=gpu_ids[gpu_cnt])
             )
 
             gpu_cnt = (gpu_cnt+1) % len(gpu_ids)

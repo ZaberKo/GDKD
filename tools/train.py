@@ -14,7 +14,7 @@ import torch.backends.cudnn as cudnn
 cudnn.benchmark = True
 
 
-def main(cfg, resume, opts, group_flag=False):
+def main(cfg, resume, opts, group_flag=False, id=""):
     experiment_name = cfg.EXPERIMENT.NAME
     if experiment_name == "":
         experiment_name = cfg.EXPERIMENT.TAG
@@ -97,7 +97,10 @@ def main(cfg, resume, opts, group_flag=False):
             )
         )
 
-    # train
+    # training
+    if len(id):
+        experiment_name=experiment_name+"_"+id
+
     trainer = trainer_dict[cfg.SOLVER.TRAINER](
         experiment_name, distiller, train_loader, val_loader, cfg
     )
@@ -110,6 +113,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser("training for knowledge distillation.")
     parser.add_argument("--cfg", type=str, default="")
     parser.add_argument("--group", action="store_true")
+    parser.add_argument("--id", type=str, default="", help="identifier for training instance")
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("opts", default=None, nargs=argparse.REMAINDER)
 
@@ -117,4 +121,4 @@ if __name__ == "__main__":
     cfg.merge_from_file(args.cfg)
     cfg.merge_from_list(args.opts)
     cfg.freeze()
-    main(cfg, args.resume, args.opts, args.group)
+    main(cfg, args.resume, args.opts, group_flag=args.group, id=args.id)
