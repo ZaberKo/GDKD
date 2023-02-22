@@ -17,4 +17,3 @@ SOLVER:
   TYPE: "SGD"
 GDKD:
   W1: 6.0
-  W2: 6.0
