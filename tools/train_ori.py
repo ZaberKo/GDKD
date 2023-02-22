@@ -37,6 +37,8 @@ def main(cfg, resume, opts, group_flag=False, id=""):
                 tags=tags,
                 config=dump_cfg(cfg),
                 group=experiment_name+"_group" if group_flag else None,
+                # helps resolve "InitStartError: Error communicating with wandb process"
+                settings=wandb.Settings(start_method="fork")
             )
         except:
             print(log_msg("Failed to use WANDB", "INFO"))
