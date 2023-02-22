@@ -10,6 +10,7 @@ import argparse
 import torch
 import torch.nn as nn
 import torch.backends.cudnn as cudnn
+from datetime import datetime
 
 cudnn.benchmark = True
 
@@ -101,13 +102,17 @@ def main(cfg, resume, opts, group_flag=False, id=""):
         )
 
     # training
-    if len(id):
-        experiment_name = experiment_name+"_"+id
+    if group_flag:
+        if id == "":
+            id = "default"
+        experiment_name = experiment_name+"_"+id+"_" + \
+            datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
 
     trainer = trainer_dict[cfg.SOLVER.TRAINER](
         experiment_name, distiller, train_loader, val_loader, cfg
     )
     trainer.train(resume=resume)
+
 
 # for training with original python reqs
 if __name__ == "__main__":
@@ -126,7 +131,7 @@ if __name__ == "__main__":
     cfg.merge_from_file(args.cfg)
     cfg.merge_from_list(args.opts)
 
-    cfg.EXPERIMENT.TAG+=","+args.suffix
+    cfg.EXPERIMENT.TAG += ","+args.suffix
 
     cfg.freeze()
     main(cfg, args.resume, args.opts, group_flag=args.group, id=args.id)
