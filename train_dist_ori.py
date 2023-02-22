@@ -36,7 +36,7 @@ if __name__ == "__main__":
 
     print("num_tests:", args.num_tests)
 
-    cmds = ["python", "-m", "tools.train_ori",
+    cmds = ["python", "-m", "tools.train",
             "--cfg", args.cfg, "--suffix", args.suffix , "--group", "--id", ""]
     if args.resume:
         cmds.append("--resume")

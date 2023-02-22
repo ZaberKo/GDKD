@@ -38,6 +38,8 @@ def main(cfg, resume, opts, group_flag=False, id=""):
                 tags=tags,
                 config=dump_cfg(cfg),
                 group=experiment_name+"_group" if group_flag else None,
+                # helps resolve "InitStartError: Error communicating with wandb process"
+                settings=wandb.Settings(start_method="fork")
             )
         except:
             print(log_msg("Failed to use WANDB", "INFO"))
@@ -112,6 +114,7 @@ def main(cfg, resume, opts, group_flag=False, id=""):
     trainer.train(resume=resume)
 
 
+# for training with original python reqs
 if __name__ == "__main__":
     import argparse
 
@@ -120,11 +123,16 @@ if __name__ == "__main__":
     parser.add_argument("--group", action="store_true")
     parser.add_argument("--id", type=str, default="",
                         help="identifier for training instance")
+    parser.add_argument("--suffix", type=str, default="")
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("opts", default=None, nargs=argparse.REMAINDER)
 
     args = parser.parse_args()
     cfg.merge_from_file(args.cfg)
     cfg.merge_from_list(args.opts)
+
+    if args.suffix != "":
+        cfg.EXPERIMENT.TAG += ","+args.suffix
+
     cfg.freeze()
     main(cfg, args.resume, args.opts, group_flag=args.group, id=args.id)
