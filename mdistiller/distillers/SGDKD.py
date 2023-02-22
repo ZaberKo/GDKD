@@ -6,15 +6,15 @@ from ._base import Distiller
 
 
 def get_masks(logits, target, eta=0.1):
-    mask_u0 = torch.ones_like(logits).scatter_(
-        1, target.unsqueeze(1), 0).bool()
+    mask_u0 = torch.zeros_like(logits).scatter_(
+        1, target.unsqueeze(1), 1).bool()
 
     mask_u1 = torch.rand_like(logits) < eta
     mask_u2 = torch.logical_not(mask_u1)
 
     # make sure not cover the target
-    mask_u1[:, target] = False
-    mask_u2[:, target] = False
+    mask_u1[mask_u0] = False
+    mask_u2[mask_u0] = False
 
     return mask_u0, mask_u1, mask_u2
 
@@ -50,10 +50,10 @@ def gdkd_loss(logits_student, logits_teacher, target, eta, w0, w1, temperature):
 
     # topk loss
     p1_student = F.log_softmax(
-        soft_logits_student - 1000.0 * mask_u2, dim=1
+        soft_logits_student - 1000.0 * ~mask_u1, dim=1
     )
     p1_teacher = F.softmax(
-        soft_logits_teacher - 1000.0 * mask_u2, dim=1
+        soft_logits_teacher - 1000.0 * ~mask_u1, dim=1
     )
 
     loss1 = (
