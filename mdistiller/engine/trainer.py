@@ -59,7 +59,7 @@ class BaseTrainer(object):
             wandb_log_dict = {"current lr": lr, **log_dict}
 
             # wandb.log({"current lr": lr})
-            wandb.log(log_dict)
+            wandb.log(wandb_log_dict)
         if log_dict["test_acc"] > self.best_acc:
             self.best_acc = log_dict["test_acc"]
             if self.cfg.LOG.WANDB:
