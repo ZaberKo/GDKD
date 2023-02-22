@@ -28,6 +28,13 @@
             "justMyCode": true
         },
         {
+            "name": "logits_grad",
+            "type": "python",
+            "request": "launch",
+            "module": "exp.calc_dataset_logits_grad_dist",
+            "justMyCode": true
+        },
+        {
             "name": "Train",
             "type": "python",
             "request": "launch",

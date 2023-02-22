@@ -116,6 +116,7 @@ if __name__ == "__main__":
     parser.add_argument("--group", action="store_true")
     parser.add_argument("--id", type=str, default="",
                         help="identifier for training instance")
+    parser.add_argument("--suffix", type=str, default="ori")
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("opts", default=None, nargs=argparse.REMAINDER)
 
@@ -123,7 +124,7 @@ if __name__ == "__main__":
     cfg.merge_from_file(args.cfg)
     cfg.merge_from_list(args.opts)
 
-    cfg.EXPERIMENT.TAG+=",ori"
+    cfg.EXPERIMENT.TAG+=","+args.suffix
 
     cfg.freeze()
     main(cfg, args.resume, args.opts, group_flag=args.group, id=args.id)

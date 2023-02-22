@@ -20,6 +20,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser("training for knowledge distillation.")
     parser.add_argument("--cfg", type=str, default="")
     parser.add_argument("--num_tests", type=int, default=1)
+    parser.add_argument("--suffix", type=str, default="ori")
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("opts", default=None, nargs=argparse.REMAINDER)
 
@@ -36,7 +37,7 @@ if __name__ == "__main__":
     print("num_tests:", args.num_tests)
 
     cmds = ["python", "-m", "tools.train_ori",
-            "--cfg", args.cfg, "--group", "--id", ""]
+            "--cfg", args.cfg, "--suffix", args.suffix , "--group", "--id", ""]
     if args.resume:
         cmds.append("--resume")
     cmds.extend(args.opts)
@@ -47,7 +48,7 @@ if __name__ == "__main__":
         tasks = []
         for i in range(args.num_tests):
             _cmds = cmds.copy()
-            _cmds[7] = str(i)
+            _cmds[9] = str(i)
 
             tasks.append(
                 executor.submit(run, _cmds, gpu_id=gpu_ids[gpu_cnt])
