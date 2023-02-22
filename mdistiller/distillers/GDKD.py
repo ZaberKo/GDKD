@@ -32,30 +32,29 @@ def cat_mask(t, mask1, mask2):
 
 
 def gdkd_loss(logits_student, logits_teacher, target, k, strategy, w0, w1, w2, temperature):
-    batch_size = target.shape[0]
-
     mask_u1, mask_u2 = get_masks(logits_teacher, k, strategy)
 
-    p_student = F.softmax(logits_student / temperature, dim=1)
-    p_teacher = F.softmax(logits_teacher / temperature, dim=1)
+    soft_logits_student = logits_student / temperature
+    soft_logits_teacher = logits_teacher / temperature
+
+    p_student = F.softmax(soft_logits_student, dim=1)
+    p_teacher = F.softmax(soft_logits_teacher, dim=1)
 
     # accumulated term
     p0_student = cat_mask(p_student, mask_u1, mask_u2)
     p0_teacher = cat_mask(p_teacher, mask_u1, mask_u2)
 
-    # TODO: why use KL? Try CE (adding a constant)
-    log_p0_student = torch.log(p0_student)
     loss0 = (
-        F.kl_div(log_p0_student, p0_teacher, reduction="batchmean")
+        F.binary_cross_entropy(p0_student, p0_teacher, reduction="mean")
         * (temperature**2)
     )
 
     # topk loss
     p1_student = F.log_softmax(
-        logits_student / temperature - 1000.0 * mask_u2, dim=1
+        soft_logits_student - 1000.0 * mask_u2, dim=1
     )
     p1_teacher = F.softmax(
-        logits_teacher / temperature - 1000.0 * mask_u2, dim=1
+        soft_logits_teacher - 1000.0 * mask_u2, dim=1
     )
 
     loss1 = (
@@ -65,14 +64,57 @@ def gdkd_loss(logits_student, logits_teacher, target, k, strategy, w0, w1, w2, t
 
     # other classes loss
     p2_student = F.log_softmax(
-        logits_student / temperature - 1000.0 * mask_u1, dim=1
+        soft_logits_student - 1000.0 * mask_u1, dim=1
     )
     p2_teacher = F.softmax(
-        logits_teacher / temperature - 1000.0 * mask_u1, dim=1
+        soft_logits_teacher - 1000.0 * mask_u1, dim=1
     )
 
     loss2 = (
         F.kl_div(p2_student, p2_teacher, reduction="batchmean")
+        * (temperature**2)
+    )
+
+    return w0 * loss0 + w1 * loss1 + w2 * loss2
+
+# More numerically stable?
+def gdkd_loss_mod(logits_student, logits_teacher, target, k, strategy, w0, w1, w2, temperature):
+    mask_u1, mask_u2 = get_masks(logits_teacher, k, strategy)
+
+    soft_logits_student = logits_student / temperature
+    soft_logits_teacher = logits_teacher / temperature
+
+    # ======== bipartition loss =========
+    p_student = F.softmax(soft_logits_student, dim=1)
+    p_teacher = F.softmax(soft_logits_teacher, dim=1)
+
+    # accumulated term
+    p0_student = cat_mask(p_student, mask_u1, mask_u2)
+    p0_teacher = cat_mask(p_teacher, mask_u1, mask_u2)
+
+    loss0 = (
+        F.binary_cross_entropy(p0_student, p0_teacher, reduction="mean")
+        * (temperature**2)
+    )
+
+    # ========== topk loss ===========
+    p1_teacher = F.softmax(
+        soft_logits_teacher - 1000.0 * mask_u2, dim=1
+    )
+
+    loss1 = (
+        # Note: not supported in pytorch 1.9
+        F.cross_entropy(soft_logits_student - 1000.0 * mask_u2, p1_teacher)
+        * (temperature**2)
+    )
+
+    # other classes loss
+    p2_teacher = F.softmax(
+        soft_logits_teacher - 1000.0 * mask_u1, dim=1
+    )
+
+    loss2 = (
+        F.cross_entropy(soft_logits_student - 1000.0 * mask_u1, p2_teacher)
         * (temperature**2)
     )
 
