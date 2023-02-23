@@ -1,6 +1,6 @@
 EXPERIMENT:
   NAME: ""
-  TAG: "dkd,res34,res18"
+  TAG: "sgdkd,res50,mobilenetv1"
   PROJECT: "imagenet_baselines"
 DATASET:
   TYPE: "imagenet"
@@ -8,9 +8,9 @@ DATASET:
   TEST:
     BATCH_SIZE: 128
 DISTILLER:
-  TYPE: "DKD"
-  TEACHER: "ResNet34"
-  STUDENT: "ResNet18"
+  TYPE: "SGDKD"
+  TEACHER: "ResNet50"
+  STUDENT: "MobileNetV1"
 SOLVER:
   BATCH_SIZE: 512
   EPOCHS: 100
@@ -25,6 +25,6 @@ LOG:
   SAVE_CHECKPOINT_FREQ: 10
 DKD:
   CE_WEIGHT: 1.0
-  BETA: 0.5
+  BETA: 2.0
   T: 1.0
   WARMUP: 1

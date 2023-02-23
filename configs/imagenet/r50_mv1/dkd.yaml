@@ -4,7 +4,7 @@ EXPERIMENT:
   PROJECT: "imagenet_baselines"
 DATASET:
   TYPE: "imagenet"
-  NUM_WORKERS: 32
+  NUM_WORKERS: 16
   TEST:
     BATCH_SIZE: 128
 DISTILLER:
