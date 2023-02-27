@@ -3,7 +3,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from ._base import Distiller
+from .utils import kl_div
 
+MASK_MAGNITUDE = 1000.0
 
 def get_masks(logits, k=5, strategy="best"):
     ranks = logits.argsort(dim=-1)
@@ -17,12 +19,11 @@ def get_masks(logits, k=5, strategy="best"):
         raise ValueError(f"Unknown strategy: {strategy}")
 
     # top 5 mask
-    mask_u1 = torch.zeros_like(logits).scatter_(1, ranks, 1).bool()
+    mask_u1 = torch.zeros_like(logits, dtype=torch.bool).scatter_(1, ranks, 1)
     # other mask
     mask_u2 = torch.logical_not(mask_u1)
 
     return mask_u1, mask_u2
-
 
 def cat_mask(t, mask1, mask2):
     t1 = (t * mask1).sum(dim=1, keepdims=True)
@@ -30,8 +31,7 @@ def cat_mask(t, mask1, mask2):
     rt = torch.cat([t1, t2], dim=1)  # [B, 2]
     return rt
 
-
-def gdkd_loss(logits_student, logits_teacher, target, k, strategy, w0, w1, w2, temperature):
+def gdkd_loss(logits_student, logits_teacher, target, k, strategy, w0, w1, w2, temperature, kl_type):
     mask_u1, mask_u2 = get_masks(logits_teacher, k, strategy)
 
     soft_logits_student = logits_student / temperature
@@ -57,11 +57,12 @@ def gdkd_loss(logits_student, logits_teacher, target, k, strategy, w0, w1, w2, t
         soft_logits_teacher - 1000.0 * mask_u2, dim=1
     )
 
-    loss1 = (
-        F.kl_div(log_p1_student, log_p1_teacher,
-                 reduction="batchmean", log_target=True)
-        * (temperature**2)
-    )
+    # loss1 = (
+    #     F.kl_div(log_p1_student, log_p1_teacher,
+    #              reduction="batchmean", log_target=True)
+    #     * (temperature**2)
+    # )
+    loss1 = kl_div(log_p1_student, log_p1_teacher, temperature, kl_type)
 
     # other classes loss
     log_p2_student = F.log_softmax(
@@ -71,17 +72,16 @@ def gdkd_loss(logits_student, logits_teacher, target, k, strategy, w0, w1, w2, t
         soft_logits_teacher - 1000.0 * mask_u1, dim=1
     )
 
-    loss2 = (
-        F.kl_div(log_p2_student, log_p2_teacher,
-                 reduction="batchmean", log_target=True)
-        * (temperature**2)
-    )
+    # loss2 = (
+    #     F.kl_div(log_p2_student, log_p2_teacher,
+    #              reduction="batchmean", log_target=True)
+    #     * (temperature**2)
+    # )
+    loss2 = kl_div(log_p2_student, log_p2_teacher, temperature, kl_type)
 
     return w0 * loss0 + w1 * loss1 + w2 * loss2
 
 # More numerically stable?
-
-
 def gdkd_loss_mod(logits_student, logits_teacher, target, k, strategy, w0, w1, w2, temperature):
     mask_u1, mask_u2 = get_masks(logits_teacher, k, strategy)
 
@@ -138,6 +138,7 @@ class GDKD(Distiller):
         self.warmup = cfg.GDKD.WARMUP
         self.k = cfg.GDKD.TOPK
         self.strategy = cfg.GDKD.STRATEGY
+        self.kl_type = cfg.GDKD.KL_TYPE
 
     def forward_train(self, image, target, **kwargs):
         logits_student, _ = self.student(image)
@@ -156,6 +157,7 @@ class GDKD(Distiller):
             self.w1,
             self.w2,
             self.temperature,
+            kl_type=self.kl_type
         )
         losses_dict = {
             "loss_ce": loss_ce,
