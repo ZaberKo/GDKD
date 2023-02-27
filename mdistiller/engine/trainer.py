@@ -4,7 +4,7 @@ from tqdm import tqdm
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 import getpass
 from tensorboardX import SummaryWriter
 from .utils import (
@@ -220,6 +220,120 @@ class CRDTrainer(BaseTrainer):
             loss.cpu().detach().numpy().mean(), batch_size)
         train_meters["top1"].update(acc1[0], batch_size)
         train_meters["top5"].update(acc5[0], batch_size)
+        # print info
+        msg = "Epoch:{}| Time(data):{:.3f}| Time(train):{:.3f}| Loss:{:.4f}| Top-1:{:.3f}| Top-5:{:.3f}".format(
+            epoch,
+            train_meters["data_time"].avg,
+            train_meters["training_time"].avg,
+            train_meters["losses"].avg,
+            train_meters["top1"].avg,
+            train_meters["top5"].avg,
+        )
+        return msg
+
+
+class RecordTrainer(BaseTrainer):
+    """
+        Add record for ce_loss and kd_loss
+    """
+    def train_epoch(self, epoch):
+        lr = adjust_learning_rate(epoch, self.cfg, self.optimizer)
+        train_meters = {
+            "training_time": AverageMeter(),
+            "data_time": AverageMeter(),
+            "losses": AverageMeter(),
+            "top1": AverageMeter(),
+            "top5": AverageMeter(),
+            "loss_ce": AverageMeter(),
+            "loss_kd": AverageMeter(),
+        }
+        # train_meters = defaultdict(AverageMeter)
+        num_iter = len(self.train_loader)
+        pbar = tqdm(range(num_iter))
+
+        # train loops
+        self.distiller.train()
+        for idx, data in enumerate(self.train_loader):
+            msg = self.train_iter(data, epoch, train_meters)
+            pbar.set_description(log_msg(msg, "TRAIN"))
+            pbar.update()
+        pbar.close()
+
+        # validate
+        test_acc, test_acc_top5, test_loss = validate(
+            self.val_loader, self.distiller)
+
+        # log
+        log_dict = OrderedDict(
+            {
+                "train_acc": train_meters["top1"].avg,
+                "train_loss": train_meters["losses"].avg,
+                "test_acc": test_acc,
+                "test_acc_top5": test_acc_top5,
+                "test_loss": test_loss,
+                "train_loss_ce": train_meters["loss_ce"].avg,
+                "train_loss_kd": train_meters["loss_kd"].avg,
+            }
+        )
+        self.log(lr, epoch, log_dict)
+        # saving checkpoint
+        state = {
+            "epoch": epoch,
+            "model": self.distiller.state_dict(),
+            "optimizer": self.optimizer.state_dict(),
+            "best_acc": self.best_acc,
+        }
+        student_state = {"model": self.distiller.module.student.state_dict()}
+        save_checkpoint(state, os.path.join(self.log_path, "latest"))
+        save_checkpoint(
+            student_state, os.path.join(self.log_path, "student_latest")
+        )
+        if epoch % self.cfg.LOG.SAVE_CHECKPOINT_FREQ == 0:
+            save_checkpoint(
+                state, os.path.join(self.log_path, "epoch_{}".format(epoch))
+            )
+            save_checkpoint(
+                student_state,
+                os.path.join(self.log_path, "student_{}".format(epoch)),
+            )
+        # update the best
+        if test_acc >= self.best_acc:
+            save_checkpoint(state, os.path.join(self.log_path, "best"))
+            save_checkpoint(
+                student_state, os.path.join(self.log_path, "student_best")
+            )
+
+    def train_iter(self, data, epoch, train_meters):
+        self.optimizer.zero_grad()
+        train_start_time = time.time()
+        image, target, index = data
+        train_meters["data_time"].update(time.time() - train_start_time)
+        image = image.float()
+        image = image.cuda(non_blocking=True)
+        target = target.cuda(non_blocking=True)
+        index = index.cuda(non_blocking=True)
+
+        # forward
+        preds, losses_dict = self.distiller(
+            image=image, target=target, epoch=epoch)
+
+        # backward
+        loss = sum([l.mean() for l in losses_dict.values()])
+        loss.backward()
+        self.optimizer.step()
+        train_meters["training_time"].update(time.time() - train_start_time)
+        # collect info
+        batch_size = image.size(0)
+        acc1, acc5 = accuracy(preds, target, topk=(1, 5))
+        train_meters["losses"].update(
+            loss.cpu().detach().numpy().mean(), batch_size)
+        train_meters["top1"].update(acc1[0], batch_size)
+        train_meters["top5"].update(acc5[0], batch_size)
+
+        # record "loss_ce" & "loss_kd"
+        for name, loss in losses_dict.items():
+            train_meters[name].update(loss.cpu().detach().numpy().mean(), batch_size)
+
         # print info
         msg = "Epoch:{}| Time(data):{:.3f}| Time(train):{:.3f}| Loss:{:.4f}| Top-1:{:.3f}| Top-5:{:.3f}".format(
             epoch,

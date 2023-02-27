@@ -4,7 +4,6 @@ import os
 import subprocess
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
-from tools.train import main as train
 from mdistiller.engine.cfg import CFG as cfg
 from mdistiller.engine.utils import log_msg
 
@@ -21,6 +20,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser("training for knowledge distillation.")
     parser.add_argument("--cfg", type=str, default="")
     parser.add_argument("--num_tests", type=int, default=1)
+    parser.add_argument("--suffix", type=str, nargs="?", default="", const="")
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("opts", default=None, nargs=argparse.REMAINDER)
 
@@ -29,15 +29,19 @@ if __name__ == "__main__":
     cfg.merge_from_list(args.opts)
     cfg.freeze()
 
-    gpu_ids=os.environ.get("CUDA_VISIBLE_DEVICES", "0").split(",")
-    gpu_ids=[int(i) for i in gpu_ids]
+    gpu_ids = os.environ.get("CUDA_VISIBLE_DEVICES", "0").split(",")
+    gpu_ids = [int(i) for i in gpu_ids]
 
     gpu_cnt = 0
 
     print("num_tests:", args.num_tests)
 
     cmds = ["python", "-m", "tools.train",
-            "--cfg", args.cfg, "--group", "--id", ""]
+            "--id", "", "--cfg", args.cfg,
+            "--group", "--record_loss"]
+    if args.suffix != "":
+        cmds.append("--suffix")
+        cmds.append(args.suffix)
     if args.resume:
         cmds.append("--resume")
     cmds.extend(args.opts)
@@ -48,7 +52,7 @@ if __name__ == "__main__":
         tasks = []
         for i in range(args.num_tests):
             _cmds = cmds.copy()
-            _cmds[7] = str(i)
+            _cmds[4] = str(i)
 
             tasks.append(
                 executor.submit(run, _cmds, gpu_id=gpu_ids[gpu_cnt])
