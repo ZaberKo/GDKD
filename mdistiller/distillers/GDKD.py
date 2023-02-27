@@ -50,34 +50,38 @@ def gdkd_loss(logits_student, logits_teacher, target, k, strategy, w0, w1, w2, t
     )
 
     # topk loss
-    p1_student = F.log_softmax(
+    log_p1_student = F.log_softmax(
         soft_logits_student - 1000.0 * mask_u2, dim=1
     )
-    p1_teacher = F.softmax(
+    log_p1_teacher = F.log_softmax(
         soft_logits_teacher - 1000.0 * mask_u2, dim=1
     )
 
     loss1 = (
-        F.kl_div(p1_student, p1_teacher, reduction="batchmean")
+        F.kl_div(log_p1_student, log_p1_teacher,
+                 reduction="batchmean", log_target=True)
         * (temperature**2)
     )
 
     # other classes loss
-    p2_student = F.log_softmax(
+    log_p2_student = F.log_softmax(
         soft_logits_student - 1000.0 * mask_u1, dim=1
     )
-    p2_teacher = F.softmax(
+    log_p2_teacher = F.log_softmax(
         soft_logits_teacher - 1000.0 * mask_u1, dim=1
     )
 
     loss2 = (
-        F.kl_div(p2_student, p2_teacher, reduction="batchmean")
+        F.kl_div(log_p2_student, log_p2_teacher,
+                 reduction="batchmean", log_target=True)
         * (temperature**2)
     )
 
     return w0 * loss0 + w1 * loss1 + w2 * loss2
 
 # More numerically stable?
+
+
 def gdkd_loss_mod(logits_student, logits_teacher, target, k, strategy, w0, w1, w2, temperature):
     mask_u1, mask_u2 = get_masks(logits_teacher, k, strategy)
 

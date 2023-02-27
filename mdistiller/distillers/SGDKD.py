@@ -4,13 +4,23 @@ import torch.nn.functional as F
 
 from ._base import Distiller
 
+MASK_MAGNITUDE=1000.0
 
 def get_masks(logits, target, eta=0.1):
     mask_u0 = torch.zeros_like(logits).scatter_(
         1, target.unsqueeze(1), 1).bool()
 
-    mask_u1 = torch.rand_like(logits) < eta
+    # NOTE: use fixed number or probaility?
+    num_classes = logits.shape[1]
+    n1 = int(num_classes*eta)
+    mask_u1 = torch.zeros_like(logits, dtype=torch.bool)
+    for i in range(logits.shape[0]):
+        indices = torch.randperm(num_classes)[:n1]
+        mask_u1[i, indices] = True
     mask_u2 = torch.logical_not(mask_u1)
+
+    # mask_u1 = torch.rand_like(logits) < eta
+    # mask_u2 = torch.logical_not(mask_u1)
 
     # make sure not cover the target
     mask_u1[mask_u0] = False
@@ -47,19 +57,37 @@ def gdkd_loss(logits_student, logits_teacher, target, eta, w0, w1, temperature):
         F.kl_div(log_p0_student, p0_teacher, reduction="batchmean")
         * (temperature**2)
     )
+    
+    # p0_student = cat_mask(p_student, mask_u0, mask_u1)
+    # p0_teacher = cat_mask(p_teacher, mask_u0, mask_u1)
+    # loss0=F.binary_cross_entropy(p0_student,p0_teacher,reduction="mean")* (temperature**2)
 
     # topk loss
-    p1_student = F.log_softmax(
-        soft_logits_student - 1000.0 * ~mask_u1, dim=1
+    log_p1_student = F.log_softmax(
+        soft_logits_student - MASK_MAGNITUDE * ~mask_u1, dim=1
     )
-    p1_teacher = F.softmax(
-        soft_logits_teacher - 1000.0 * ~mask_u1, dim=1
+    log_p1_teacher = F.log_softmax(
+        soft_logits_teacher - MASK_MAGNITUDE * ~mask_u1, dim=1
     )
 
     loss1 = (
-        F.kl_div(p1_student, p1_teacher, reduction="batchmean")
+        F.kl_div(log_p1_student, log_p1_teacher,
+                 reduction="batchmean", log_target=True)
         * (temperature**2)
     )
+
+    # log_p2_student = F.log_softmax(
+    #     soft_logits_student - MASK_MAGNITUDE * ~mask_u1, dim=1
+    # )
+    # log_p2_teacher = F.log_softmax(
+    #     soft_logits_teacher - MASK_MAGNITUDE * ~mask_u1, dim=1
+    # )
+
+    # loss2 = (
+    #     F.kl_div(log_p2_student, log_p2_teacher,
+    #              reduction="batchmean", log_target=True)
+    #     * (temperature**2)
+    # )
 
     return w0 * loss0 + w1 * loss1
 
