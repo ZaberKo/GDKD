@@ -64,6 +64,10 @@ def dkd_loss(logits_student, logits_teacher, target, alpha, gamma, temperature, 
     top1_p = p_teacher.gather(1, max_indices).squeeze(1)  # [B]
     top2_p, _ = torch.max(p_teacher*mask_u2, dim=1)
     beta = top1_p / top2_p  # [B], requires_grad=False
+    beta_mean = beta.mean()
+    # avoid outlier beta value 
+    # NOTE: beta >= 1.0
+    beta = torch.clamp_max(beta, max=beta_mean*2)
     batch_size = beta.shape[0]
 
     return alpha*tckd + gamma*((beta*nckd).sum()/batch_size)
