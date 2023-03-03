@@ -236,6 +236,13 @@ class RecordTrainer(BaseTrainer):
     """
         Add record for ce_loss and kd_loss
     """
+    def __init__(self, experiment_name, distiller, train_loader, val_loader, cfg):
+        super(RecordTrainer,self).__init__(experiment_name, distiller, train_loader, val_loader, cfg)
+
+
+        self.enable_progress_bar = cfg.LOG.ENABLE_PROGRESS_BAR
+
+
     def train_epoch(self, epoch):
         lr = adjust_learning_rate(epoch, self.cfg, self.optimizer)
         train_meters = {
@@ -249,15 +256,19 @@ class RecordTrainer(BaseTrainer):
         }
         # train_meters = defaultdict(AverageMeter)
         num_iter = len(self.train_loader)
-        pbar = tqdm(range(num_iter))
+        if self.enable_progress_bar:
+            pbar = tqdm(range(num_iter))
 
         # train loops
         self.distiller.train()
         for idx, data in enumerate(self.train_loader):
             msg = self.train_iter(data, epoch, train_meters)
-            pbar.set_description(log_msg(msg, "TRAIN"))
-            pbar.update()
-        pbar.close()
+            if self.enable_progress_bar:
+                pbar.set_description(log_msg(msg, "TRAIN"))
+                pbar.update()
+
+        if self.enable_progress_bar:
+            pbar.close()
 
         # validate
         test_acc, test_acc_top5, test_loss = validate(

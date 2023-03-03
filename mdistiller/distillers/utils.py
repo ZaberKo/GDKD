@@ -1,10 +1,11 @@
 import torch
 import torch.nn.functional as F
 
-def kl_div(log_p, log_q,  T, kl_type, reduction="batchmean"):
+
+def kl_div(log_p, log_q, T, kl_type, reduction="batchmean"):
     if kl_type == "forward":
         res = F.kl_div(log_p, log_q, reduction=reduction,
-                       log_target=True) 
+                       log_target=True)
     elif kl_type == "reverse":
         res = F.kl_div(log_q, log_p, reduction=reduction,
                        log_target=True)
@@ -15,9 +16,9 @@ def kl_div(log_p, log_q,  T, kl_type, reduction="batchmean"):
         )
     else:
         raise ValueError(f"Unknown kl_type: {kl_type}")
-    
-    if reduction=="none":
-        res = res.sum(dim=1) # [B,C]->[B]
+
+    if reduction == "none":
+        res = res.sum(dim=1)  # [B,C]->[B]
 
     res = res * (T**2)
 
