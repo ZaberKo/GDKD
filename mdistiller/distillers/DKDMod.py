@@ -25,7 +25,7 @@ def cat_mask(t, mask1, mask2):
     return rt
 
 
-def dkd_loss(logits_student, logits_teacher, target, alpha, beta, temperature):
+def dkd_loss(logits_student, logits_teacher, target, alpha, beta, temperature, mask_magnitude):
     gt_mask = _get_gt_mask(logits_student, target)
     other_mask = _get_other_mask(logits_student, target)
     pred_student = F.softmax(logits_student / temperature, dim=1)
@@ -39,10 +39,10 @@ def dkd_loss(logits_student, logits_teacher, target, alpha, beta, temperature):
     )
 
     log_pred_teacher_part2 = F.log_softmax(
-        logits_teacher / temperature - 1000.0 * gt_mask, dim=1
+        logits_teacher / temperature - mask_magnitude * gt_mask, dim=1
     )
     log_pred_student_part2 = F.log_softmax(
-        logits_student / temperature - 1000.0 * gt_mask, dim=1
+        logits_student / temperature - mask_magnitude * gt_mask, dim=1
     )
 
     nckd_loss = kl_div(log_pred_student_part2,
@@ -61,6 +61,7 @@ class DKDMod(Distiller):
         self.beta = cfg.DKDMOD.BETA
         self.temperature = cfg.DKDMOD.T
         self.warmup = cfg.DKDMOD.WARMUP
+        self.mask_magnitude = cfg.DKDMOD.MASK_MAGNITUDE
 
     def forward_train(self, image, target, **kwargs):
         logits_student, _ = self.student(image)
@@ -76,6 +77,7 @@ class DKDMod(Distiller):
             self.alpha,
             self.beta,
             self.temperature,
+            self.mask_magnitude
         )
         losses_dict = {
             "loss_ce": loss_ce,
