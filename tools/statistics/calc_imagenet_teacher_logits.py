@@ -118,7 +118,7 @@ def main(cfg):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--cfg", type=str, default="imagenet.yaml")
+    parser.add_argument("--cfg", type=str, default="tools/statistics/imagenet.yaml")
     parser.add_argument("--model", type=str, default="resnet32x4")
 
     args = parser.parse_args()
