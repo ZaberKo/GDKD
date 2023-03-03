@@ -72,10 +72,10 @@ def dkd_loss(logits_student, logits_teacher, target, alpha, gamma, temperature, 
     log_p2_teacher = F.log_softmax(
         soft_logits_teacher - MASK_MAGNITUDE * mask_u1, dim=1
     )
-    nckd = kl_div(log_p2_student, log_p2_teacher, temperature,
-                  kl_type, reduction="none")  # [B]
     # nckd = kl_div(log_p2_student, log_p2_teacher, temperature,
-    #               kl_type)
+    #               kl_type, reduction="none")  # [B]
+    nckd = kl_div(log_p2_student, log_p2_teacher, temperature,
+                  kl_type)
 
     # adaptive beta based on teacher logits:
     top1_p = p_teacher.gather(1, max_indices).squeeze(1)  # [B]
@@ -83,18 +83,18 @@ def dkd_loss(logits_student, logits_teacher, target, alpha, gamma, temperature, 
     beta = top1_p / top2_p  # [B], requires_grad=False
 
     # beta = gamma*beta
-    beta = gamma*beta
-    # beta_mean = beta.mean()
+    # beta = gamma*beta
+    beta_mean = beta.mean()
     # avoid outlier beta value
     # NOTE: beta >= 1.0 by definition
-    # beta = torch.clamp_max(beta, max=beta_mean*1.2)
+    beta = torch.clamp_max(beta, max=beta_mean*1.2)
 
     # beta_meter.update(beta.mean().item(), beta.shape[0])
     # print(f"beta_mean: {beta_mean.item()}")
     # print(f"beta_meter: {beta_meter.avg}")
 
-    nckd_loss = (beta*nckd).sum()/beta.shape[0]
-    # nckd_loss = beta.mean()*nckd
+    # nckd_loss = (beta*nckd).sum()/beta.shape[0]
+    nckd_loss = beta.mean()*nckd
 
     # nckd_meter.update(nckd_loss.item(), 1)
 
