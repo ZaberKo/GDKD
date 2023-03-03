@@ -26,7 +26,10 @@ def get_masks(logits, target):
         logits, dtype=torch.bool).scatter_(1, max_indices, 1)
 
     # other mask
-    mask_u2 = torch.logical_not(mask_u1)
+    # mask_u2 = torch.logical_not(mask_u1)
+    # faster impl?
+    mask_u2 = torch.ones_like(
+        logits, dtype=torch.bool).scatter_(1, max_indices, 0)
 
     return max_indices, mask_u1, mask_u2
 
@@ -51,17 +54,17 @@ def dkd_loss(logits_student, logits_teacher, target, alpha, gamma, temperature, 
     p0_student = cat_mask(p_student, mask_u1, mask_u2)
     p0_teacher = cat_mask(p_teacher, mask_u1, mask_u2)
 
-    # tckd_loss = (
-    #     F.binary_cross_entropy(p0_student, p0_teacher, reduction="mean")
-    #     * (temperature**2)
-    # )
-
-    tckd_loss = kl_div(
-        torch.log(p0_student),
-        torch.log(p0_teacher),
-        temperature,
-        kl_type="forward"
+    tckd_loss = (
+        F.binary_cross_entropy(p0_student, p0_teacher, reduction="mean")
+        * (temperature**2)
     )
+
+    # tckd_loss = kl_div(
+    #     torch.log(p0_student),
+    #     torch.log(p0_teacher),
+    #     temperature,
+    #     kl_type="forward"
+    # )
 
     log_p2_student = F.log_softmax(
         soft_logits_student - MASK_MAGNITUDE * mask_u1, dim=1
@@ -71,27 +74,33 @@ def dkd_loss(logits_student, logits_teacher, target, alpha, gamma, temperature, 
     )
     nckd = kl_div(log_p2_student, log_p2_teacher, temperature,
                   kl_type, reduction="none")  # [B]
+    # nckd = kl_div(log_p2_student, log_p2_teacher, temperature,
+    #               kl_type)
 
     # adaptive beta based on teacher logits:
     top1_p = p_teacher.gather(1, max_indices).squeeze(1)  # [B]
     top2_p, _ = torch.max(p_teacher*mask_u2, dim=1)  # [B]
     beta = top1_p / top2_p  # [B], requires_grad=False
+
+    # beta = gamma*beta
+    beta = gamma*beta
     # beta_mean = beta.mean()
     # avoid outlier beta value
     # NOTE: beta >= 1.0 by definition
-    # beta = torch.clamp_max(beta, max=beta_mean*2)
+    # beta = torch.clamp_max(beta, max=beta_mean*1.2)
 
     # beta_meter.update(beta.mean().item(), beta.shape[0])
     # print(f"beta_mean: {beta_mean.item()}")
     # print(f"beta_meter: {beta_meter.avg}")
 
     nckd_loss = (beta*nckd).sum()/beta.shape[0]
+    # nckd_loss = beta.mean()*nckd
 
     # nckd_meter.update(nckd_loss.item(), 1)
 
     # print("ADKD nckd:",nckd_meter.avg)
 
-    return alpha*tckd_loss + gamma*nckd_loss
+    return alpha*tckd_loss + nckd_loss
 
 
 # Adaptive beta DKD
