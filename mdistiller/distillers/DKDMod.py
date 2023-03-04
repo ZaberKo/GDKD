@@ -53,9 +53,15 @@ def dkd_loss(logits_student, logits_teacher, target, alpha, beta, temperature, m
     pred_student = cat_mask(pred_student, gt_mask, other_mask)
     pred_teacher = cat_mask(pred_teacher, gt_mask, other_mask)
 
+    # tckd_loss = (
+    #     F.binary_cross_entropy(pred_student, pred_teacher, reduction="mean")
+    #     * (temperature**2)
+    # )
+    log_pred_student = torch.log(pred_student)
     tckd_loss = (
-        F.binary_cross_entropy(pred_student, pred_teacher, reduction="mean")
+        F.kl_div(log_pred_student, pred_teacher, size_average=False)
         * (temperature**2)
+        / target.shape[0]
     )
 
     log_pred_teacher_part2 = F.log_softmax(
