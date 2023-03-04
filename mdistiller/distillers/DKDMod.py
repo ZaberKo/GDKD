@@ -17,6 +17,20 @@ def _get_other_mask(logits, target):
     mask = torch.ones_like(logits).scatter_(1, target.unsqueeze(1), 0).bool()
     return mask
 
+def get_top1_masks(logits, target):
+    # NOTE: masks are calculated in cuda
+
+    # top1 mask
+    max_indices = logits.argmax(dim=1, keepdim=True)
+    mask_u1 = torch.zeros_like(
+        logits, dtype=torch.bool).scatter_(1, max_indices, 1)
+
+    # other mask
+    mask_u2 = torch.ones_like(
+        logits, dtype=torch.bool).scatter_(1, max_indices, 0)
+
+    return mask_u1, mask_u2
+
 
 def cat_mask(t, mask1, mask2):
     t1 = (t * mask1).sum(dim=1, keepdims=True)
@@ -25,9 +39,15 @@ def cat_mask(t, mask1, mask2):
     return rt
 
 
-def dkd_loss(logits_student, logits_teacher, target, alpha, beta, temperature, mask_magnitude, kl_type):
-    gt_mask = _get_gt_mask(logits_student, target)
-    other_mask = _get_other_mask(logits_student, target)
+def dkd_loss(logits_student, logits_teacher, target, alpha, beta, temperature, mask_magnitude, kl_type, strategy="target"):
+    if strategy == "target":
+        gt_mask = _get_gt_mask(logits_teacher, target)
+        other_mask = _get_other_mask(logits_teacher, target)
+    elif strategy == "top1":
+        gt_mask, other_mask = get_top1_masks(logits_teacher, target)
+    else:
+        raise ValueError("Unknown strategy: {}".format(strategy))
+    
     pred_student = F.softmax(logits_student / temperature, dim=1)
     pred_teacher = F.softmax(logits_teacher / temperature, dim=1)
     pred_student = cat_mask(pred_student, gt_mask, other_mask)
@@ -63,6 +83,7 @@ class DKDMod(Distiller):
         self.warmup = cfg.DKDMOD.WARMUP
         self.kl_type = cfg.DKDMOD.KL_TYPE
         self.mask_magnitude = cfg.DKDMOD.MASK_MAGNITUDE
+        self.strategy = cfg.DKDMOD.STRATEGY
 
     def forward_train(self, image, target, **kwargs):
         logits_student, _ = self.student(image)
@@ -77,9 +98,10 @@ class DKDMod(Distiller):
             target,
             self.alpha,
             self.beta,
-            self.temperature,
-            self.mask_magnitude,
-            self.kl_type
+            temperature= self.temperature,
+            mask_magnitude= self.mask_magnitude,
+            kl_type=self.kl_type,
+            strategy = self.strategy
         )
         losses_dict = {
             "loss_ce": loss_ce,
