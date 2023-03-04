@@ -1,6 +1,6 @@
 EXPERIMENT:
   NAME: ""
-  TAG: "sgdkd,res34,res18"
+  TAG: "dkd,res34,res18"
   PROJECT: "imagenet_baselines"
 DATASET:
   TYPE: "imagenet"
@@ -8,7 +8,7 @@ DATASET:
   TEST:
     BATCH_SIZE: 128
 DISTILLER:
-  TYPE: "SGDKD"
+  TYPE: "DKD"
   TEACHER: "ResNet34"
   STUDENT: "ResNet18"
 SOLVER:
@@ -23,7 +23,7 @@ SOLVER:
 LOG:
   TENSORBOARD_FREQ: 50
   SAVE_CHECKPOINT_FREQ: 10
-SGDKD:
+DKD:
   CE_WEIGHT: 1.0
   ALPHA: 0.5
   BETA: 0.5
