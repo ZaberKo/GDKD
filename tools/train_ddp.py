@@ -23,6 +23,7 @@ def local_print(msg, local_rank):
     if local_rank == 0:
         print(msg)
 
+
 @record
 def main(cfg, resume, opts, group_flag=False, id="", local_rank=0):
     experiment_name = cfg.EXPERIMENT.NAME
@@ -110,7 +111,8 @@ def main(cfg, resume, opts, group_flag=False, id="", local_rank=0):
     # distiller = torch.nn.DataParallel(distiller.cuda())
     distiller = nn.SyncBatchNorm.convert_sync_batchnorm(distiller)
     distiller = distiller.cuda()
-    distiller = DDP(distiller, device_ids=[local_rank])
+    distiller = DDP(distiller, device_ids=[local_rank],
+                    find_unused_parameters=True)
 
     if cfg.DISTILLER.TYPE != "NONE":
         local_print(
