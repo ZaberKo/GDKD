@@ -47,35 +47,36 @@ def dkd_loss(logits_student, logits_teacher, target, alpha, beta, temperature, m
         gt_mask, other_mask = get_top1_masks(logits_teacher, target)
     else:
         raise ValueError("Unknown strategy: {}".format(strategy))
-    
-    pred_student = F.softmax(logits_student / temperature, dim=1)
-    pred_teacher = F.softmax(logits_teacher / temperature, dim=1)
-    pred_student = cat_mask(pred_student, gt_mask, other_mask)
-    pred_teacher = cat_mask(pred_teacher, gt_mask, other_mask)
+
+    soft_logits_student = logits_student / temperature
+    soft_logits_teacher = logits_teacher / temperature
+
+    p_student = F.softmax(soft_logits_student, dim=1)
+    p_teacher = F.softmax(soft_logits_teacher, dim=1)
+    p0_student = cat_mask(p_student, gt_mask, other_mask)
+    p0_teacher = cat_mask(p_teacher, gt_mask, other_mask)
 
     # tckd_loss = (
     #     F.binary_cross_entropy(pred_student, pred_teacher, reduction="mean")
     #     * (temperature**2)
     # )
-    log_pred_student = torch.log(pred_student)
+    log_p0_student = torch.log(p0_student)
     tckd_loss = (
-        F.kl_div(log_pred_student, pred_teacher, size_average=False)
+        F.kl_div(log_p0_student, p0_teacher, reduction="batchmean")
         * (temperature**2)
-        / target.shape[0]
     )
 
-    log_pred_teacher_part2 = F.log_softmax(
+    log_p2_teacher = F.log_softmax(
         logits_teacher / temperature - mask_magnitude * gt_mask, dim=1
     )
-    log_pred_student_part2 = F.log_softmax(
+    log_p2_student = F.log_softmax(
         logits_student / temperature - mask_magnitude * gt_mask, dim=1
     )
 
-    nckd_loss = kl_div(log_pred_student_part2,
-                       log_pred_teacher_part2, temperature, kl_type=kl_type)
+    nckd_loss = kl_div(log_p2_student,
+                       log_p2_teacher, temperature, kl_type=kl_type)
 
     return alpha * tckd_loss + beta * nckd_loss
-
 
 class DKDMod(Distiller):
     """DKD with some new losses"""
