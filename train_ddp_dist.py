@@ -58,7 +58,7 @@ if __name__ == "__main__":
         tasks = []
         for i in range(args.num_tests):
             _cmds = cmds.copy()
-            _cmds[8] = str(i)
+            _cmds[9] = str(i)
 
             gpu_ids = []
             for _ in range(args.ngpu_per_test):
