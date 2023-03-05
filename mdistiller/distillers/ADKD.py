@@ -81,6 +81,9 @@ def dkd_loss(logits_student, logits_teacher, target, alpha, beta, gamma, tempera
     _beta = torch.zeros_like(nckd)
     for i in range(_beta.shape[0]):
         _beta[i] = beta[target[i]]
+    
+    _beta = _beta*gamma
+    print(f"beta: {_beta.mean().item()} ± {_beta.std().item()}")
 
     nckd_loss = (_beta*nckd).sum()/nckd.shape[0]
 
