@@ -37,8 +37,9 @@ if __name__ == "__main__":
     print("num_tests:", args.num_tests)
 
     cmds = ["python", "-m", "tools.train",
-            "--id", "", "--cfg", args.cfg,
-            "--group", "--record_loss"]
+            "--cfg", args.cfg,
+            "--group", "--id", "",
+            "--record_loss"]
     if args.suffix != "":
         cmds.append("--suffix")
         cmds.append(args.suffix)
@@ -52,7 +53,7 @@ if __name__ == "__main__":
         tasks = []
         for i in range(args.num_tests):
             _cmds = cmds.copy()
-            _cmds[4] = str(i)
+            _cmds[7] = str(i)
 
             tasks.append(
                 executor.submit(run, _cmds, gpu_id=gpu_ids[gpu_cnt])
