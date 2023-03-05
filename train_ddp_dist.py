@@ -8,17 +8,18 @@ from mdistiller.engine.cfg import CFG as cfg
 from mdistiller.engine.utils import log_msg
 
 
-def run(cmds, gpu_id):
+def run(cmds, gpu_ids):
     cmds = cmds.copy()
-    cmds.insert(0, f"CUDA_VISIBLE_DEVICES={gpu_id}")
+    cmds.insert(0, f'CUDA_VISIBLE_DEVICES={",".join(gpu_ids)}')
     cmd_str = " ".join(cmds)
     print(f'Running: {cmd_str}')
-    subprocess.run(cmd_str, shell=True, check=True)
+    # subprocess.run(cmd_str, shell=True, check=True)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("training for knowledge distillation.")
     parser.add_argument("--cfg", type=str, default="")
+    parser.add_argument("--ngpu_per_test", type=int, default=1)
     parser.add_argument("--num_tests", type=int, default=1)
     parser.add_argument("--suffix", type=str, nargs="?", default="", const="")
     parser.add_argument("--resume", action="store_true")
@@ -29,16 +30,21 @@ if __name__ == "__main__":
     cfg.merge_from_list(args.opts)
     cfg.freeze()
 
-    gpu_ids = os.environ.get("CUDA_VISIBLE_DEVICES", "0").split(",")
-    gpu_ids = [int(i) for i in gpu_ids]
+    allgpu_ids = os.environ.get("CUDA_VISIBLE_DEVICES", "0").split(",")
+    allgpu_ids = [int(i) for i in allgpu_ids]
+
+    if args.ngpu_per_test > len(allgpu_ids):
+        raise ValueError("ngpu_per_test > all gpus")
 
     gpu_cnt = 0
 
     print("num_tests:", args.num_tests)
 
-    cmds = ["python", "-m", "tools.train",
-            "--id", "", "--cfg", args.cfg,
-            "--group", "--record_loss"]
+    cmds = ["torchrun", "--nproc_per_node", str(args.ngpu_per_test),
+            "-m", "tools.train",
+            "--cfg", args.cfg,
+            "--group", "--id", "",
+            "--record_loss"]
     if args.suffix != "":
         cmds.append("--suffix")
         cmds.append(args.suffix)
@@ -52,13 +58,15 @@ if __name__ == "__main__":
         tasks = []
         for i in range(args.num_tests):
             _cmds = cmds.copy()
-            _cmds[4] = str(i)
+            _cmds[8] = str(i)
 
+            gpu_ids = []
+            for _ in range(args.ngpu_per_test):
+                gpu_ids.append(str(allgpu_ids[gpu_cnt]))
+                gpu_cnt = (gpu_cnt+1) % len(allgpu_ids)
             tasks.append(
-                executor.submit(run, _cmds, gpu_id=gpu_ids[gpu_cnt])
+                executor.submit(run, _cmds, gpu_ids=gpu_ids)
             )
-
-            gpu_cnt = (gpu_cnt+1) % len(gpu_ids)
 
         for future in as_completed(tasks):
             future.result()
