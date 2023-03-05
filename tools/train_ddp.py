@@ -14,6 +14,7 @@ from datetime import datetime
 
 import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
+from torch.distributed.elastic.multiprocessing.errors import record
 
 cudnn.benchmark = True
 
@@ -22,7 +23,7 @@ def local_print(msg, local_rank):
     if local_rank == 0:
         print(msg)
 
-
+@record
 def main(cfg, resume, opts, group_flag=False, id="", local_rank=0):
     experiment_name = cfg.EXPERIMENT.NAME
     if experiment_name == "":
