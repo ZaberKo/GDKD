@@ -6,6 +6,7 @@ import sys
 import time
 from tqdm import tqdm
 
+import torch.distributed as dist
 
 class AverageMeter(object):
     """Computes and stores the average and current value"""
@@ -102,3 +103,14 @@ def save_checkpoint(obj, path):
 def load_checkpoint(path):
     with open(path, "rb") as f:
         return torch.load(f, map_location="cpu")
+
+def reduce_tensor(tensor, avg=True):
+    rt = tensor.clone()
+    if not dist.is_initialized():
+        return rt
+    torch.distributed.all_reduce(rt, op=torch.distributed.ReduceOp.SUM)
+    if avg:
+        world_size = dist.get_world_size()
+        rt /= world_size
+
+    return rt

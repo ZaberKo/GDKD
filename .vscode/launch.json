@@ -35,6 +35,29 @@
             "justMyCode": true
         },
         {
+            "name": "Train ddp",
+            "type": "python",
+            "request": "launch",
+            // "program": "tools/train.py",
+            "module": "tools.train_ddp",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "args": [
+                "--cfg",
+                "configs/cifar100/adkd/res32x4_res8x4.yaml",
+                // "configs/cifar100/adkd/wrn40_2_shuv1.yaml",
+                // "configs/cifar100/adkd/res56_res20.yaml",
+                "--record_loss",
+                "LOG.WANDB",
+                "False",
+                // "ADKD.KL_TYPE",
+                // "both",
+                // "LOG.ENABLE_PROGRESS_BAR",
+                // "False"
+            ],
+            "env": {"LOCAL_RANK": "0", "RANK": "0", "WORLD_SIZE": "1"}
+        },
+        {
             "name": "Train",
             "type": "python",
             "request": "launch",
@@ -45,10 +68,15 @@
             "args": [
                 "--cfg",
                 "configs/cifar100/adkd/res32x4_res8x4.yaml",
+                // "configs/cifar100/adkd/wrn40_2_shuv1.yaml",
+                // "configs/cifar100/adkd/res56_res20.yaml",
+                "--record_loss",
                 "LOG.WANDB",
                 "False",
-                "ADKD.KL_TYPE",
-                "both"
+                // "ADKD.KL_TYPE",
+                // "both",
+                // "LOG.ENABLE_PROGRESS_BAR",
+                // "False"
             ]
         },
         {
@@ -61,10 +89,19 @@
             "justMyCode": false,
             "args": [
                 "--cfg",
-                "configs/cifar100/dkd/res32x4_res8x4.yaml",
+                "configs/cifar100/dkdmod/res32x4_res8x4.yaml",
                 "LOG.WANDB",
                 "False",
             ]
+        },
+        {
+            "name": "Train debug",
+            "type": "python",
+            "request": "launch",
+            // "program": "tools/train.py",
+            "module": "tools.train_debug",
+            "console": "integratedTerminal",
+            "justMyCode": false,
         }
     ]
 }
