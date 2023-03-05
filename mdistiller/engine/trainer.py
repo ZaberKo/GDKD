@@ -382,8 +382,8 @@ class RecordTrainer(BaseTrainer):
 
         # record "loss_ce" & "loss_kd"
         for name, loss in losses_dict.items():
-            loss = reduce_tensor(loss.cpu().detach())
-            train_meters[name].update(loss.numpy().mean(), batch_size)
+            loss = reduce_tensor(loss.detach())
+            train_meters[name].update(loss.cpu().numpy().mean(), batch_size)
 
         # print info
         msg = "Epoch:{}| Time(data):{:.3f}| Time(train):{:.3f}| Loss:{:.4f}| Top-1:{:.3f}| Top-5:{:.3f}".format(
