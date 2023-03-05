@@ -265,8 +265,8 @@ class RecordTrainer(BaseTrainer):
     """
         Add record for ce_loss and kd_loss
     """
-    def __init__(self, experiment_name, distiller, train_loader, val_loader, cfg):
-        super(RecordTrainer,self).__init__(experiment_name, distiller, train_loader, val_loader, cfg)
+    def __init__(self, experiment_name, distiller, train_loader, val_loader, cfg, is_distributed=False, local_rank=0):
+        super(RecordTrainer,self).__init__(experiment_name, distiller, train_loader, val_loader, cfg, is_distributed, local_rank)
 
         self.enable_progress_bar = cfg.LOG.ENABLE_PROGRESS_BAR
 
