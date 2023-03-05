@@ -194,9 +194,9 @@ class BaseTrainer(object):
         acc1, acc5 = accuracy(preds, target, topk=(1, 5))
         
         # for dist training
-        loss = reduce_tensor(loss.cpu().detach())
-        acc1 = reduce_tensor(acc1.cpu())
-        acc5 = reduce_tensor(acc5.cpu())
+        loss = reduce_tensor(loss.detach())
+        acc1 = reduce_tensor(acc1)
+        acc5 = reduce_tensor(acc5)
         
         train_meters["losses"].update(
             loss.numpy().mean(), batch_size)
@@ -241,9 +241,9 @@ class CRDTrainer(BaseTrainer):
         acc1, acc5 = accuracy(preds, target, topk=(1, 5))
 
         # for dist training
-        loss = reduce_tensor(loss.cpu().detach())
-        acc1 = reduce_tensor(acc1.cpu())
-        acc5 = reduce_tensor(acc5.cpu())
+        loss = reduce_tensor(loss.detach())
+        acc1 = reduce_tensor(acc1)
+        acc5 = reduce_tensor(acc5)
 
         train_meters["losses"].update(
             loss.numpy().mean(), batch_size)
@@ -371,9 +371,9 @@ class RecordTrainer(BaseTrainer):
         acc1, acc5 = accuracy(preds, target, topk=(1, 5))
 
         # for dist training
-        loss = reduce_tensor(loss.cpu().detach())
-        acc1 = reduce_tensor(acc1.cpu())
-        acc5 = reduce_tensor(acc5.cpu())
+        loss = reduce_tensor(loss.detach())
+        acc1 = reduce_tensor(acc1)
+        acc5 = reduce_tensor(acc5)
 
         train_meters["losses"].update(
             loss.numpy().mean(), batch_size)
