@@ -41,7 +41,7 @@ if __name__ == "__main__":
     print("num_tests:", args.num_tests)
 
     cmds = ["torchrun", "--nproc_per_node", str(args.ngpu_per_test),
-            "-m", "tools.train",
+            "-m", "tools.train_ddp",
             "--cfg", args.cfg,
             "--group", "--id", "",
             "--record_loss"]
