@@ -13,7 +13,7 @@ def run(cmds, gpu_ids):
     cmds.insert(0, f'CUDA_VISIBLE_DEVICES={",".join(gpu_ids)}')
     cmd_str = " ".join(cmds)
     print(f'Running: {cmd_str}')
-    # subprocess.run(cmd_str, shell=True, check=True)
+    subprocess.run(cmd_str, shell=True, check=True)
 
 
 if __name__ == "__main__":
