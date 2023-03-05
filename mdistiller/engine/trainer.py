@@ -199,7 +199,7 @@ class BaseTrainer(object):
         acc5 = reduce_tensor(acc5)
         
         train_meters["losses"].update(
-            loss.numpy().mean(), batch_size)
+            loss.cpu().numpy().mean(), batch_size)
         train_meters["top1"].update(acc1.item(), batch_size)
         train_meters["top5"].update(acc5.item(), batch_size)
         # print info
@@ -246,7 +246,7 @@ class CRDTrainer(BaseTrainer):
         acc5 = reduce_tensor(acc5)
 
         train_meters["losses"].update(
-            loss.numpy().mean(), batch_size)
+            loss.cpu().numpy().mean(), batch_size)
         train_meters["top1"].update(acc1.item(), batch_size)
         train_meters["top5"].update(acc5.item(), batch_size)
         # print info
@@ -376,7 +376,7 @@ class RecordTrainer(BaseTrainer):
         acc5 = reduce_tensor(acc5)
 
         train_meters["losses"].update(
-            loss.numpy().mean(), batch_size)
+            loss.cpu().numpy().mean(), batch_size)
         train_meters["top1"].update(acc1.item(), batch_size)
         train_meters["top5"].update(acc5.item(), batch_size)
 
