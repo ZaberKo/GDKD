@@ -83,7 +83,8 @@ def dkd_loss(logits_student, logits_teacher, target, alpha, beta, gamma, tempera
         _beta[i] = beta[target[i]]
     
     _beta = _beta*gamma
-    print(f"beta: {_beta.mean().item()} ± {_beta.std().item()}")
+    # _beta = _beta*0.8
+    # print(f"beta: {_beta.mean().item()} ± {_beta.std().item()}")
 
     nckd_loss = (_beta*nckd).sum()/nckd.shape[0]
 
