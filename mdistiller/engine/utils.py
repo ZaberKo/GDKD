@@ -44,7 +44,12 @@ def validate(val_loader, distiller):
             loss = criterion(output, target)
             acc1, acc5 = accuracy(output, target, topk=(1, 5))
             batch_size = image.size(0)
-            losses.update(loss.cpu().detach().numpy().mean(), batch_size)
+
+            loss = reduce_tensor(loss.detach())
+            acc1 = reduce_tensor(acc1)
+            acc5 = reduce_tensor(acc5)
+
+            losses.update(loss.cpu().numpy().mean(), batch_size)
             top1.update(acc1[0], batch_size)
             top5.update(acc5[0], batch_size)
 
@@ -105,9 +110,10 @@ def load_checkpoint(path):
         return torch.load(f, map_location="cpu")
 
 def reduce_tensor(tensor, avg=True):
-    rt = tensor.clone()
     if not dist.is_initialized():
         return rt
+    
+    rt = tensor.clone()
     torch.distributed.all_reduce(rt, op=torch.distributed.ReduceOp.SUM)
     if avg:
         world_size = dist.get_world_size()
