@@ -37,15 +37,15 @@ if __name__ == "__main__":
     if args.ngpu_per_test > len(allgpu_ids):
         raise ValueError("ngpu_per_test > all gpus")
 
-    gpu_cnt = 0
-
     print("num_tests:", args.num_tests)
+    print("ngpu_per_test:", args.ngpu_per_test)
+    print("data_workers:", args.data_workers)
 
     cmds = ["torchrun", "--nproc_per_node", str(args.ngpu_per_test),
             "-m", "tools.train_ddp",
             "--cfg", args.cfg,
             "--group", "--id", "",
-            "--record_loss", "--data_workers", args.data_workers]
+            "--record_loss", "--data_workers", str(args.data_workers)]
     if args.suffix != "":
         cmds.append("--suffix")
         cmds.append(args.suffix)
@@ -56,6 +56,7 @@ if __name__ == "__main__":
     executor = ProcessPoolExecutor(args.num_tests)
 
     try:
+        gpu_cnt = 0
         tasks = []
         for i in range(args.num_tests):
             _cmds = cmds.copy()
