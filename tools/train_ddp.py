@@ -62,6 +62,10 @@ def main(cfg, resume, opts, group_flag=False, id="", local_rank=0):
         # cfg & loggers
         show_cfg(cfg)
 
+    # os.environ["NCCL_NET_GDR_LEVEL"] = "1"
+    # os.environ["NCCL_P2P_DISABLE"] = "1"
+    os.environ["NCCL_P2P_LEVEL"]="PXB"
+
     # init dist
     dist.init_process_group(backend='nccl')
     torch.cuda.set_device(local_rank)
