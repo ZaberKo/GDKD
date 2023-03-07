@@ -125,7 +125,7 @@ def dkd_loss(logits_student, logits_teacher, target, alpha, beta, gamma, tempera
     return alpha*tckd_loss + nckd_loss
 
 
-def dkd_loss2(logits_student, logits_teacher, target, warmup_weight, gamma, temperature, kl_type):
+def dkd_loss2(logits_student, logits_teacher, target, kd_loss_weight, warmup_weight, gamma, temperature, kl_type):
     logits_student_clone = logits_student.detach()
     logits_student_clone.requires_grad = True
     soft_logits_student = logits_student_clone / temperature
@@ -135,13 +135,13 @@ def dkd_loss2(logits_student, logits_teacher, target, warmup_weight, gamma, temp
     log_p_teacher = F.log_softmax(soft_logits_teacher, dim=1)
 
     # assume alpha=1 and dynamic beta
-    loss = 8.0*(
-        # warmup_weight *
+    loss = (
+        kd_loss_weight * warmup_weight *
         kl_div(log_p_student, log_p_teacher, temperature, kl_type)
     )
     loss.backward()
     grad = logits_student_clone.grad
-    target_grad = grad.gather(1, target.unsqueeze(1)) # [B, 1]
+    target_grad = grad.gather(1, target.unsqueeze(1))  # [B, 1]
     # other_grad = grad.scatter(1, target.unsqueeze(1), 0)
 
     # target_norm = target_grad.abs().mean()
@@ -194,11 +194,12 @@ class ADKD(Distiller):
     def __init__(self, student, teacher, cfg):
         super(ADKD, self).__init__(student, teacher)
         self.ce_loss_weight = cfg.ADKD.CE_WEIGHT
+        self.kd_loss_weight = cfg.ADKD.KD_WEIGHT
         # self.alpha = cfg.ADKD.ALPHA
         self.temperature = cfg.ADKD.T
         self.warmup = cfg.ADKD.WARMUP
         self.kl_type = cfg.ADKD.KL_TYPE
-        self.gamma = cfg.ADKD.GAMMA  
+        self.gamma = cfg.ADKD.GAMMA
 
         # self.beta = prebuild_beta(cfg.DISTILLER.TEACHER)
 
@@ -218,6 +219,7 @@ class ADKD(Distiller):
             target,
             # alpha=self.alpha,
             # beta=self.beta,
+            kd_loss_weight=self.kd_loss_weight,
             warmup_weight=warmup_weight,
             gamma=self.gamma,
             temperature=self.temperature,
