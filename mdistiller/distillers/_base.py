@@ -39,6 +39,9 @@ class Distiller(nn.Module):
             return self.forward_train(**kwargs)
         return self.forward_test(kwargs["image"])
 
+    def get_train_info(self):
+        return {}
+
 
 class Vanilla(nn.Module):
     def __init__(self, student):

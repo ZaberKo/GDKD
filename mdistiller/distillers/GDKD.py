@@ -7,6 +7,7 @@ from .utils import kl_div
 
 MASK_MAGNITUDE = 1000.0
 
+
 def get_masks(logits, k=5, strategy="best"):
     ranks = logits.argsort(dim=-1)
 
@@ -25,11 +26,13 @@ def get_masks(logits, k=5, strategy="best"):
 
     return mask_u1, mask_u2
 
+
 def cat_mask(t, mask1, mask2):
     t1 = (t * mask1).sum(dim=1, keepdims=True)
     t2 = (t * mask2).sum(dim=1, keepdims=True)
     rt = torch.cat([t1, t2], dim=1)  # [B, 2]
     return rt
+
 
 def gdkd_loss(logits_student, logits_teacher, target, k, strategy, w0, w1, w2, temperature, kl_type):
     mask_u1, mask_u2 = get_masks(logits_teacher, k, strategy)
@@ -44,7 +47,7 @@ def gdkd_loss(logits_student, logits_teacher, target, k, strategy, w0, w1, w2, t
     p0_student = cat_mask(p_student, mask_u1, mask_u2)
     p0_teacher = cat_mask(p_teacher, mask_u1, mask_u2)
 
-    loss0 = (
+    high_loss = (
         F.binary_cross_entropy(p0_student, p0_teacher, reduction="mean")
         * (temperature**2)
     )
@@ -57,7 +60,7 @@ def gdkd_loss(logits_student, logits_teacher, target, k, strategy, w0, w1, w2, t
         soft_logits_teacher - MASK_MAGNITUDE * mask_u2, dim=1
     )
 
-    loss1 = kl_div(log_p1_student, log_p1_teacher, temperature, kl_type)
+    low_top_loss = kl_div(log_p1_student, log_p1_teacher, temperature, kl_type)
 
     # other classes loss
     log_p2_student = F.log_softmax(
@@ -67,9 +70,15 @@ def gdkd_loss(logits_student, logits_teacher, target, k, strategy, w0, w1, w2, t
         soft_logits_teacher - MASK_MAGNITUDE * mask_u1, dim=1
     )
 
-    loss2 = kl_div(log_p2_student, log_p2_teacher, temperature, kl_type)
+    low_other_loss = kl_div(
+        log_p2_student, log_p2_teacher, temperature, kl_type)
 
-    return w0 * loss0 + w1 * loss1 + w2 * loss2
+    return (
+        w0 * high_loss + w1 * low_top_loss + w2 * low_other_loss,
+        high_loss.detach(),
+        low_top_loss.detach(),
+        low_other_loss.detach()
+    )
 
 
 class GDKD(Distiller):
@@ -94,7 +103,7 @@ class GDKD(Distiller):
 
         # losses
         loss_ce = self.ce_loss_weight * F.cross_entropy(logits_student, target)
-        loss_dkd = min(kwargs["epoch"] / self.warmup, 1.0) * gdkd_loss(
+        loss_dkd, self.high_loss, self.low_top_loss, self.low_other_loss = gdkd_loss(
             logits_student,
             logits_teacher,
             target,
@@ -106,8 +115,16 @@ class GDKD(Distiller):
             self.temperature,
             kl_type=self.kl_type
         )
+        loss_kd = min(kwargs["epoch"] / self.warmup, 1.0) * loss_dkd
         losses_dict = {
             "loss_ce": loss_ce,
-            "loss_kd": loss_dkd,
+            "loss_kd": loss_kd,
         }
         return logits_student, losses_dict
+
+    def get_train_info(self):
+        return {
+            "high_loss": self.high_loss,
+            "low_top_loss": self.low_top_loss,
+            "low_other_loss": self.low_other_loss,
+        }

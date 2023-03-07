@@ -53,7 +53,7 @@ class BaseTrainer(object):
         return optimizer
 
     def log(self, lr, epoch, log_dict):
-        if self.local_rank == 0:                
+        if self.local_rank == 0:
             # tensorboard log
             for k, v in log_dict.items():
                 self.tf_writer.add_scalar(k, v, epoch)
@@ -92,11 +92,12 @@ class BaseTrainer(object):
         while epoch < self.cfg.SOLVER.EPOCHS + 1:
             self.train_epoch(epoch)
             epoch += 1
-        
+
         if self.local_rank == 0:
             print(log_msg("Best accuracy:{}".format(self.best_acc), "EVAL"))
             with open(os.path.join(self.log_path, "worklog.txt"), "a") as writer:
-                writer.write("best_acc\t" + "{:.2f}".format(float(self.best_acc)))
+                writer.write("best_acc\t" +
+                             "{:.2f}".format(float(self.best_acc)))
 
     def train_epoch(self, epoch):
         lr = adjust_learning_rate(epoch, self.cfg, self.optimizer)
@@ -129,8 +130,6 @@ class BaseTrainer(object):
         test_acc, test_acc_top5, test_loss = validate(
             self.val_loader, self.distiller)
 
-        # TODO: check sync train_meters and test_acc
-
         if self.local_rank == 0:
             # log
             log_dict = OrderedDict(
@@ -150,14 +149,16 @@ class BaseTrainer(object):
                 "optimizer": self.optimizer.state_dict(),
                 "best_acc": self.best_acc,
             }
-            student_state = {"model": self.distiller.module.student.state_dict()}
+            student_state = {
+                "model": self.distiller.module.student.state_dict()}
             save_checkpoint(state, os.path.join(self.log_path, "latest"))
             save_checkpoint(
                 student_state, os.path.join(self.log_path, "student_latest")
             )
             if epoch % self.cfg.LOG.SAVE_CHECKPOINT_FREQ == 0:
                 save_checkpoint(
-                    state, os.path.join(self.log_path, "epoch_{}".format(epoch))
+                    state, os.path.join(
+                        self.log_path, "epoch_{}".format(epoch))
                 )
                 save_checkpoint(
                     student_state,
@@ -192,12 +193,12 @@ class BaseTrainer(object):
         # collect info
         batch_size = image.size(0)
         acc1, acc5 = accuracy(preds, target, topk=(1, 5))
-        
+
         # for dist training
         loss = reduce_tensor(loss.detach())
         acc1 = reduce_tensor(acc1)
         acc5 = reduce_tensor(acc5)
-        
+
         train_meters["losses"].update(
             loss.cpu().numpy().mean(), batch_size)
         train_meters["top1"].update(acc1.item(), batch_size)
@@ -265,11 +266,14 @@ class RecordTrainer(BaseTrainer):
     """
         Add record for ce_loss and kd_loss
     """
+
     def __init__(self, experiment_name, distiller, train_loader, val_loader, cfg, is_distributed=False, local_rank=0):
-        super(RecordTrainer,self).__init__(experiment_name, distiller, train_loader, val_loader, cfg, is_distributed, local_rank)
+        super(RecordTrainer, self).__init__(experiment_name, distiller,
+                                            train_loader, val_loader, cfg, is_distributed, local_rank)
 
         self.enable_progress_bar = cfg.LOG.ENABLE_PROGRESS_BAR
 
+        self.train_info_meters = None
 
     def train_epoch(self, epoch):
         lr = adjust_learning_rate(epoch, self.cfg, self.optimizer)
@@ -282,24 +286,24 @@ class RecordTrainer(BaseTrainer):
             "loss_ce": AverageMeter(),
             "loss_kd": AverageMeter(),
         }
-        # train_meters = defaultdict(AverageMeter)
+        self.train_info_meters = defaultdict(AverageMeter)
 
         if self.is_distributed:
             self.train_loader.sampler.set_epoch(epoch)
-        
+
         num_iter = len(self.train_loader)
-        if self.enable_progress_bar and self.local_rank==0:
+        if self.enable_progress_bar and self.local_rank == 0:
             pbar = tqdm(range(num_iter))
 
         # train loops
         self.distiller.train()
         for idx, data in enumerate(self.train_loader):
             msg = self.train_iter(data, epoch, train_meters)
-            if self.enable_progress_bar and self.local_rank==0:
+            if self.enable_progress_bar and self.local_rank == 0:
                 pbar.set_description(log_msg(msg, "TRAIN"))
                 pbar.update()
 
-        if self.enable_progress_bar and self.local_rank==0:
+        if self.enable_progress_bar and self.local_rank == 0:
             pbar.close()
 
         # validate
@@ -319,6 +323,9 @@ class RecordTrainer(BaseTrainer):
                     "train_loss_kd": train_meters["loss_kd"].avg,
                 }
             )
+            log_dict.update({
+                k: v.avg for k, v in self.train_info_meters.items()
+            })
             self.log(lr, epoch, log_dict)
             # saving checkpoint
             state = {
@@ -327,14 +334,16 @@ class RecordTrainer(BaseTrainer):
                 "optimizer": self.optimizer.state_dict(),
                 "best_acc": self.best_acc,
             }
-            student_state = {"model": self.distiller.module.student.state_dict()}
+            student_state = {
+                "model": self.distiller.module.student.state_dict()}
             save_checkpoint(state, os.path.join(self.log_path, "latest"))
             save_checkpoint(
                 student_state, os.path.join(self.log_path, "student_latest")
             )
             if epoch % self.cfg.LOG.SAVE_CHECKPOINT_FREQ == 0:
                 save_checkpoint(
-                    state, os.path.join(self.log_path, "epoch_{}".format(epoch))
+                    state, os.path.join(
+                        self.log_path, "epoch_{}".format(epoch))
                 )
                 save_checkpoint(
                     student_state,
@@ -374,6 +383,14 @@ class RecordTrainer(BaseTrainer):
         loss = reduce_tensor(loss.detach())
         acc1 = reduce_tensor(acc1)
         acc5 = reduce_tensor(acc5)
+
+        train_info = self.distiller.module.get_train_info()
+        for key, info in train_info.items():
+            if isinstance(info, torch.Tensor):
+                info = reduce_tensor(info)
+                self.train_info_meters[key].update(
+                    info.cpu().numpy().mean(), batch_size
+                )
 
         train_meters["losses"].update(
             loss.cpu().numpy().mean(), batch_size)

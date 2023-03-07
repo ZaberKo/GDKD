@@ -17,6 +17,7 @@ def _get_other_mask(logits, target):
     mask = torch.ones_like(logits).scatter_(1, target.unsqueeze(1), 0).bool()
     return mask
 
+
 def get_top1_masks(logits, target):
     # NOTE: masks are calculated in cuda
 
@@ -76,7 +77,12 @@ def dkd_loss(logits_student, logits_teacher, target, alpha, beta, temperature, m
     nckd_loss = kl_div(log_p2_student,
                        log_p2_teacher, temperature, kl_type=kl_type)
 
-    return alpha * tckd_loss + beta * nckd_loss
+    return (
+        alpha * tckd_loss + beta * nckd_loss,
+        tckd_loss.detach(),
+        nckd_loss.detach()
+    )
+
 
 class DKDMod(Distiller):
     """DKD with some new losses"""
@@ -99,19 +105,26 @@ class DKDMod(Distiller):
 
         # losses
         loss_ce = self.ce_loss_weight * F.cross_entropy(logits_student, target)
-        loss_dkd = min(kwargs["epoch"] / self.warmup, 1.0) * dkd_loss(
+        loss_dkd, self.tckd_loss, self.nckd_loss= dkd_loss(
             logits_student,
             logits_teacher,
             target,
             self.alpha,
             self.beta,
-            temperature= self.temperature,
-            mask_magnitude= self.mask_magnitude,
+            temperature=self.temperature,
+            mask_magnitude=self.mask_magnitude,
             kl_type=self.kl_type,
-            strategy = self.strategy
+            strategy=self.strategy
         )
+        loss_kd = min(kwargs["epoch"] / self.warmup, 1.0) * loss_dkd
         losses_dict = {
             "loss_ce": loss_ce,
-            "loss_kd": loss_dkd,
+            "loss_kd": loss_kd,
         }
         return logits_student, losses_dict
+
+    def get_train_info(self):
+        return {
+            "tckd_loss": self.tckd_loss,
+            "nckd_loss": self.nckd_loss
+        }
