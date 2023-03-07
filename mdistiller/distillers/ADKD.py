@@ -15,7 +15,7 @@ MASK_MAGNITUDE = 1000.0
 # nckd_meter = AverageMeter()
 
 
-def get_masks(logits, target):
+def get_top1_masks(logits, target):
     # NOTE: masks are calculated in cuda
 
     # target mask
@@ -28,12 +28,24 @@ def get_masks(logits, target):
         logits, dtype=torch.bool).scatter_(1, max_indices, 1)
 
     # other mask
-    # mask_u2 = torch.logical_not(mask_u1)
-    # faster impl?
     mask_u2 = torch.ones_like(
         logits, dtype=torch.bool).scatter_(1, max_indices, 0)
 
     return max_indices, mask_u1, mask_u2
+
+
+def get_target_masks(logits, target):
+    # NOTE: masks are calculated in cuda
+
+    # target mask
+    target = target.unsqueeze(1)
+    mask_u1 = torch.zeros_like(
+        logits, dtype=torch.bool).scatter_(1, target, 1)
+
+    mask_u2 = torch.ones_like(
+        logits, dtype=torch.bool).scatter_(1, target, 0)
+
+    return mask_u1, mask_u2
 
 
 def cat_mask(t, mask1, mask2):
@@ -44,7 +56,7 @@ def cat_mask(t, mask1, mask2):
 
 
 def dkd_loss(logits_student, logits_teacher, target, alpha, beta, gamma, temperature, kl_type):
-    max_indices, mask_u1, mask_u2 = get_masks(logits_teacher, target)
+    max_indices, mask_u1, mask_u2 = get_top1_masks(logits_teacher, target)
 
     soft_logits_student = logits_student / temperature
     soft_logits_teacher = logits_teacher / temperature
@@ -81,7 +93,7 @@ def dkd_loss(logits_student, logits_teacher, target, alpha, beta, gamma, tempera
     _beta = torch.zeros_like(nckd)
     for i in range(_beta.shape[0]):
         _beta[i] = beta[target[i]]
-    
+
     _beta = _beta*gamma
     # _beta = _beta*0.8
     # print(f"beta: {_beta.mean().item()} ± {_beta.std().item()}")
@@ -113,39 +125,82 @@ def dkd_loss(logits_student, logits_teacher, target, alpha, beta, gamma, tempera
     return alpha*tckd_loss + nckd_loss
 
 
-def prebuild_beta(model, dataset="cifar100", T=4.0):
-    logits_dict = np.load(f"exp/{dataset}_{model}_logits.npz")
+def dkd_loss2(logits_student, logits_teacher, target, warmup_weight, gamma, temperature, kl_type):
+    logits_student_clone = logits_student.detach()
+    logits_student_clone.requires_grad = True
+    soft_logits_student = logits_student_clone / temperature
+    soft_logits_teacher = logits_teacher / temperature
 
-    beta=torch.zeros(len(logits_dict))
-    for i, logits in enumerate(logits_dict.values()):
-        logits = torch.as_tensor(logits)
-        probs = F.softmax(logits/T, dim=1)
-        idx = torch.argsort(probs, dim=1)
+    log_p_student = F.log_softmax(soft_logits_student, dim=1)
+    log_p_teacher = F.log_softmax(soft_logits_teacher, dim=1)
 
-        max_prob = torch.zeros(probs.shape[0])
-        for j in range(idx.shape[0]):
-            max_prob[j] = probs[j, idx[j, -1]]
+    # assume alpha=1 and dynamic beta
+    loss = 8.0*(
+        # warmup_weight *
+        kl_div(log_p_student, log_p_teacher, temperature, kl_type)
+    )
+    loss.backward()
+    grad = logits_student_clone.grad
+    target_grad = grad.gather(1, target.unsqueeze(1)) # [B, 1]
+    # other_grad = grad.scatter(1, target.unsqueeze(1), 0)
 
-        other_prob = torch.zeros(probs.shape[0])
-        for j in range(idx.shape[0]):
-            other_prob[j] = probs[j, idx[j, -2]]
+    # target_norm = target_grad.abs().mean()
+    # other_norm = other_grad.norm(p=2, dim=1).mean()
 
-        beta[i] = (max_prob/other_prob).mean()
+    # target_norm = target_grad.abs()
+    # other_norm = other_grad.abs().mean(dim=1)
 
-    return beta
+    gamma = 0.5
+    # let reweighted target_norm / new_other_norm = gamma
+    # r = (target_norm / other_norm)/gamma
+    # print(r.mean())
+
+    # mask_t, mask_n = get_target_masks(logits_student_clone, target)
+
+    # new_grad = grad*mask_t + r.unsqueeze(1) * grad * mask_n
+    new_grad = grad + (gamma-1) * target_grad
+
+    # meta update
+    # Other part grads are updated in Trainer.
+    logits_student.backward(grad, retain_graph=True)
+
+    # NOTE: return detached loss for kd_loss record only.
+    return loss.detach()
+
+
+# def prebuild_beta(model, dataset="cifar100", T=4.0):
+#     logits_dict = np.load(f"exp/{dataset}_{model}_logits.npz")
+
+#     beta=torch.zeros(len(logits_dict))
+#     for i, logits in enumerate(logits_dict.values()):
+#         logits = torch.as_tensor(logits)
+#         probs = F.softmax(logits/T, dim=1)
+#         idx = torch.argsort(probs, dim=1)
+
+#         max_prob = torch.zeros(probs.shape[0])
+#         for j in range(idx.shape[0]):
+#             max_prob[j] = probs[j, idx[j, -1]]
+
+#         other_prob = torch.zeros(probs.shape[0])
+#         for j in range(idx.shape[0]):
+#             other_prob[j] = probs[j, idx[j, -2]]
+
+#         beta[i] = (max_prob/other_prob).mean()
+
+#     return beta
 
 # Adaptive beta DKD
 class ADKD(Distiller):
     def __init__(self, student, teacher, cfg):
         super(ADKD, self).__init__(student, teacher)
         self.ce_loss_weight = cfg.ADKD.CE_WEIGHT
-        self.alpha = cfg.ADKD.ALPHA
+        # self.alpha = cfg.ADKD.ALPHA
         self.temperature = cfg.ADKD.T
         self.warmup = cfg.ADKD.WARMUP
         self.kl_type = cfg.ADKD.KL_TYPE
-        self.gamma = cfg.ADKD.GAMMA  # additional global control for nckd
+        self.gamma = cfg.ADKD.GAMMA  
 
-        self.beta = prebuild_beta(cfg.DISTILLER.TEACHER)
+        # self.beta = prebuild_beta(cfg.DISTILLER.TEACHER)
 
     def forward_train(self, image, target, **kwargs):
         logits_student, _ = self.student(image)
@@ -154,12 +209,16 @@ class ADKD(Distiller):
 
         # losses
         loss_ce = self.ce_loss_weight * F.cross_entropy(logits_student, target)
-        loss_dkd = min(kwargs["epoch"] / self.warmup, 1.0) * dkd_loss(
+
+        warmup_weight = min(kwargs["epoch"] / self.warmup, 1.0)
+
+        loss_dkd = dkd_loss2(
             logits_student,
             logits_teacher,
             target,
-            alpha=self.alpha,
-            beta=self.beta,
+            # alpha=self.alpha,
+            # beta=self.beta,
+            warmup_weight=warmup_weight,
             gamma=self.gamma,
             temperature=self.temperature,
             kl_type=self.kl_type
