@@ -111,7 +111,7 @@ def load_checkpoint(path):
 
 def reduce_tensor(tensor, avg=True):
     if not dist.is_initialized():
-        return rt
+        return tensor
     
     rt = tensor.clone()
     torch.distributed.all_reduce(rt, op=torch.distributed.ReduceOp.SUM)
