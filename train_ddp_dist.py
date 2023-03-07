@@ -45,7 +45,10 @@ if __name__ == "__main__":
             "-m", "tools.train_ddp",
             "--cfg", args.cfg,
             "--group", "--id", "",
-            "--record_loss", "--data_workers", str(args.data_workers)]
+            "--record_loss"]
+    if args.data_workers:
+        cmds.append("--data_workers")
+        cmds.append(str(args.data_workers))
     if args.suffix != "":
         cmds.append("--suffix")
         cmds.append(args.suffix)
