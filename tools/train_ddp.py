@@ -149,6 +149,7 @@ if __name__ == "__main__":
     parser.add_argument("--record_loss", action="store_true")
     parser.add_argument("--suffix", type=str, default="")
     parser.add_argument("--resume", action="store_true")
+    parser.add_argument("--data_workers", type=int, default=None)
     # parser.add_argument("--local_rank", type=int, default=0)
     # parser.add_argument("--world_size", type=int, default=1)
     parser.add_argument("opts", default=None, nargs=argparse.REMAINDER)
@@ -176,6 +177,10 @@ if __name__ == "__main__":
     local_print(
         f"resize test batch_size {cfg.DATASET.TEST.BATCH_SIZE} to {cfg.DATASET.TEST.BATCH_SIZE // world_size}", local_rank)
     cfg.DATASET.TEST.BATCH_SIZE = cfg.DATASET.TEST.BATCH_SIZE // world_size
+
+    if args.data_workers is not None:
+        cfg.DATASET.NUM_WORKERS = args.data_workers
+
     local_print(
         f"resize num_workers {cfg.DATASET.NUM_WORKERS} to {cfg.DATASET.NUM_WORKERS // world_size}", local_rank)
     cfg.DATASET.NUM_WORKERS = cfg.DATASET.NUM_WORKERS // world_size
