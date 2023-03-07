@@ -64,7 +64,7 @@ def main(cfg, resume, opts, group_flag=False, id="", local_rank=0):
 
     # os.environ["NCCL_NET_GDR_LEVEL"] = "1"
     # os.environ["NCCL_P2P_DISABLE"] = "1"
-    os.environ["NCCL_P2P_LEVEL"]="PXB"
+    os.environ["NCCL_P2P_LEVEL"] = "PXB"
 
     # init dist
     dist.init_process_group(backend='nccl')
@@ -115,8 +115,12 @@ def main(cfg, resume, opts, group_flag=False, id="", local_rank=0):
     # distiller = torch.nn.DataParallel(distiller.cuda())
     distiller = nn.SyncBatchNorm.convert_sync_batchnorm(distiller)
     distiller = distiller.cuda()
-    distiller = DDP(distiller, device_ids=[local_rank],
-                    find_unused_parameters=True)
+    distiller = DDP(
+        distiller,
+        device_ids=[local_rank],
+        find_unused_parameters=True,
+        static_graph = True
+    )
 
     if cfg.DISTILLER.TYPE != "NONE":
         local_print(
