@@ -47,8 +47,9 @@ def gdkd_loss(logits_student, logits_teacher, target, k, strategy, w0, w1, w2, t
     p0_student = cat_mask(p_student, mask_u1, mask_u2)
     p0_teacher = cat_mask(p_teacher, mask_u1, mask_u2)
 
+    log_p0_student = torch.log(p0_student)
     high_loss = (
-        F.binary_cross_entropy(p0_student, p0_teacher, reduction="mean")
+        F.kl_div(log_p0_student, p0_teacher, reduction="batchmean")
         * (temperature**2)
     )
 
