@@ -46,7 +46,7 @@ if __name__ == "__main__":
             "--nproc_per_node", str(args.ngpu_per_test),
             "--nnodes", "1",
             "--rdzv_backend", "c10d",
-            "--rdzv_endpoint", ""
+            "--rdzv_endpoint", "",
             "-m", "tools.train_ddp",
             "--cfg", args.cfg,
             "--group", "--id", "",
