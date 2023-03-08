@@ -112,9 +112,10 @@ def get_imagenet_dataloaders(batch_size, val_batch_size, num_workers,
     train_loader = torch.utils.data.DataLoader(
         train_set,
         batch_size=batch_size,
-        shuffle=train_sampler is None,
+        shuffle=not is_distributed,
         num_workers=num_workers,
         pin_memory=True,
+        drop_last=is_distributed,
         sampler=train_sampler
     )
     test_loader = get_imagenet_val_loader(
@@ -137,9 +138,10 @@ def get_imagenet_dataloaders_sample(batch_size, val_batch_size, num_workers, k=4
     train_loader = torch.utils.data.DataLoader(
         train_set,
         batch_size=batch_size,
-        shuffle=train_sampler is None,
+        shuffle=not is_distributed,
         num_workers=num_workers,
         pin_memory=True,
+        drop_last=is_distributed,
         sampler=train_sampler
     )
     test_loader = get_imagenet_val_loader(
