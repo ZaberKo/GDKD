@@ -45,8 +45,7 @@ if __name__ == "__main__":
     cmds = ["torchrun", 
             "--nproc_per_node", str(args.ngpu_per_test),
             "--nnodes", "1",
-            "--rdzv_backend", "c10d",
-            "--rdzv_endpoint", "",
+            "--master_port", "",
             "-m", "tools.train_ddp",
             "--cfg", args.cfg,
             "--group", "--id", "",
@@ -69,9 +68,9 @@ if __name__ == "__main__":
         for i in range(args.num_tests):
             _cmds = cmds.copy()
             # host_ip:
-            _cmds[8] = f"localhost:{args.port+i}"
+            _cmds[6] = str(args.port+i)
             # id:
-            _cmds[15] = str(i)
+            _cmds[13] = str(i)
 
             gpu_ids = []
             for _ in range(args.ngpu_per_test):
