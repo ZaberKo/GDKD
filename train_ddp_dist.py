@@ -24,6 +24,7 @@ if __name__ == "__main__":
     parser.add_argument("--suffix", type=str, nargs="?", default="", const="")
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--data_workers", type=int, default=None)
+    parser.add_argument("--port", type=int, default=29400)
     parser.add_argument("opts", default=None, nargs=argparse.REMAINDER)
 
     args = parser.parse_args()
@@ -41,7 +42,11 @@ if __name__ == "__main__":
     print("ngpu_per_test:", args.ngpu_per_test)
     print("data_workers:", args.data_workers)
 
-    cmds = ["torchrun", "--nproc_per_node", str(args.ngpu_per_test),
+    cmds = ["torchrun", 
+            "--nproc_per_node", str(args.ngpu_per_test),
+            "--nnodes", "1",
+            "--rdzv_backend", "c10d",
+            "--rdzv_endpoint", ""
             "-m", "tools.train_ddp",
             "--cfg", args.cfg,
             "--group", "--id", "",
@@ -63,7 +68,10 @@ if __name__ == "__main__":
         tasks = []
         for i in range(args.num_tests):
             _cmds = cmds.copy()
-            _cmds[9] = str(i)
+            # host_ip:
+            _cmds[8] = f"localhost:{args.port+i}"
+            # id:
+            _cmds[15] = str(i)
 
             gpu_ids = []
             for _ in range(args.ngpu_per_test):
