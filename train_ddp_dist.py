@@ -33,7 +33,7 @@ if __name__ == "__main__":
     cfg.freeze()
 
     allgpu_ids = os.environ.get("CUDA_VISIBLE_DEVICES", "0").split(",")
-    allgpu_ids = [int(i) for i in allgpu_ids]
+    allgpu_ids = [int(i) for i in allgpu_ids if i != ""]
 
     if args.ngpu_per_test > len(allgpu_ids):
         raise ValueError("ngpu_per_test > all gpus")
@@ -42,7 +42,7 @@ if __name__ == "__main__":
     print("ngpu_per_test:", args.ngpu_per_test)
     print("data_workers:", args.data_workers)
 
-    cmds = ["torchrun", 
+    cmds = ["torchrun",
             "--nproc_per_node", str(args.ngpu_per_test),
             "--nnodes", "1",
             "--master_port", "",
@@ -76,6 +76,7 @@ if __name__ == "__main__":
             for _ in range(args.ngpu_per_test):
                 gpu_ids.append(str(allgpu_ids[gpu_cnt]))
                 gpu_cnt = (gpu_cnt+1) % len(allgpu_ids)
+
             tasks.append(
                 executor.submit(run, _cmds, gpu_ids=gpu_ids)
             )
