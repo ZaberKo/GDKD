@@ -50,8 +50,8 @@ def validate(val_loader, distiller):
             acc5 = reduce_tensor(acc5)
 
             losses.update(loss.cpu().numpy().mean(), batch_size)
-            top1.update(acc1[0], batch_size)
-            top5.update(acc5[0], batch_size)
+            top1.update(acc1.item(), batch_size)
+            top5.update(acc5.item(), batch_size)
 
             # measure elapsed time
             batch_time.update(time.time() - start_time)
