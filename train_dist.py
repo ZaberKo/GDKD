@@ -23,6 +23,7 @@ if __name__ == "__main__":
     parser.add_argument("--num_tests", type=int, default=1)
     parser.add_argument("--suffix", type=str, nargs="?", default="", const="")
     parser.add_argument("--resume", action="store_true")
+    parser.add_argument("--data_workers", type=int, default=None)
     parser.add_argument("opts", default=None, nargs=argparse.REMAINDER)
 
     args = parser.parse_args()
@@ -43,6 +44,9 @@ if __name__ == "__main__":
             "--cfg", args.cfg,
             "--group", "--id", "",
             "--record_loss"]
+    if args.data_workers:
+        cmds.append("--data_workers")
+        cmds.append(str(args.data_workers))
     if args.suffix != "":
         cmds.append("--suffix")
         cmds.append(args.suffix)
