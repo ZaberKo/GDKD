@@ -1,9 +1,9 @@
 EXPERIMENT:
   NAME: ""
-  TAG: "gdkd,vgg13,mv2"
+  TAG: "sgdkd,vgg13,mv2"
   PROJECT: "cifar100_baselines"
 DISTILLER:
-  TYPE: "GDKD"
+  TYPE: "SGDKD"
   TEACHER: "vgg13"
   STUDENT: "MobileNetV2"
 SOLVER:
@@ -15,5 +15,5 @@ SOLVER:
   WEIGHT_DECAY: 0.0005
   MOMENTUM: 0.9
   TYPE: "SGD"
-GDKD:
+SGDKD:
   W1: 6.0

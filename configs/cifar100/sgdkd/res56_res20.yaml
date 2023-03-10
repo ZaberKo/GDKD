@@ -1,9 +1,9 @@
 EXPERIMENT:
   NAME: ""
-  TAG: "gdkd,res56,res20"
+  TAG: "sgdkd,res56,res20"
   PROJECT: "cifar100_baselines"
 DISTILLER:
-  TYPE: "GDKD"
+  TYPE: "SGDKD"
   TEACHER: "resnet56"
   STUDENT: "resnet20"
 SOLVER:
@@ -15,5 +15,5 @@ SOLVER:
   WEIGHT_DECAY: 0.0005
   MOMENTUM: 0.9
   TYPE: "SGD"
-GDKD:
+SGDKD:
   W1: 2.0

@@ -1,9 +1,9 @@
 EXPERIMENT:
   NAME: ""
-  TAG: "gdkd,wrn_40_2,wrn_40_1"
+  TAG: "sgdkd,wrn_40_2,wrn_40_1"
   PROJECT: "cifar100_baselines"
 DISTILLER:
-  TYPE: "GDKD"
+  TYPE: "SGDKD"
   TEACHER: "wrn_40_2"
   STUDENT: "wrn_40_1"
 SOLVER:
@@ -15,5 +15,5 @@ SOLVER:
   WEIGHT_DECAY: 0.0005
   MOMENTUM: 0.9
   TYPE: "SGD"
-GDKD:
+SGDKD:
   W1: 6.0
