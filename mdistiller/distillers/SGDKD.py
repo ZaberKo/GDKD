@@ -55,7 +55,7 @@ def cat_mask(t, *masks):
 
 
 def gdkd_loss(logits_student, logits_teacher, target, eta, w0, w1, temperature, kl_type):
-    mask_u0, mask_u1 = get_masks(logits_teacher, target, eta)
+    mask_u0, mask_u1, mask_u2 = get_masks(logits_teacher, target, eta)
 
     soft_logits_student = logits_student / temperature
     soft_logits_teacher = logits_teacher / temperature
