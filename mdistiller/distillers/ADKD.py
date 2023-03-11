@@ -76,10 +76,12 @@ def dkd_loss(logits_student, logits_teacher, target, alpha, beta, gamma, tempera
     # nckd = kl_div(log_p2_student, log_p2_teacher, temperature,
     #               kl_type)
 
+    # TODO: decay gamma
     # adaptive beta based on teacher logits:
-    _beta = beta[target] * gamma
+    _beta = beta[target]
 
-    nckd_loss = (_beta*nckd).sum()/nckd.shape[0]
+    nckd_loss = (_beta*nckd).sum()/nckd.shape[0]*gamma
+
 
     return (
         alpha*tckd_loss + nckd_loss,
