@@ -13,29 +13,18 @@ def get_masks(logits, target, eta=0.1):
     mask_u0 = torch.zeros_like(logits, dtype=torch.bool).scatter_(
         1, target.unsqueeze(1), 1)
 
-    # NOTE: use fixed number or probaility?
-    # num_classes = logits.shape[1]
-    # n1 = int(num_classes*eta)
-    # mask_u1 = torch.zeros_like(logits, dtype=torch.bool)
-    # for i in range(logits.shape[0]):
-    #     indices = torch.randperm(num_classes)[:n1]
-    #     mask_u1[i, indices] = True
-    # mask_u2 = torch.logical_not(mask_u1)
-
-    
-
     mask_u1 = torch.rand_like(logits) < eta
-    
-    # batch_size = logits.shape[0]
-    # for i in range(batch_size):
-    #     if torch.all(mask_u1[i]):
-    #         while True:
-    #             j=torch.randint(batch_size)
-    #             if j != target[i]:
-    #                 break
-    #         mask_u1[i][j]=True
-
     mask_u2 = torch.logical_not(mask_u1)
+
+    # make sure mask_u1 has at least one element
+    rand_u2 = torch.randint_like(target, logits.shape[1])
+    rand_mask = rand_u2 == target
+    # if rand_u2[i] = target[i]; then rand_u2[i]+=1
+    rand_u2 = (rand_u2 + rand_mask.to(dtype=rand_u2.dtype)) % logits.shape[1]
+    rand_u2 = rand_u2.unsqueeze(1)
+
+    mask_u1.scatter_(1, rand_u2, False)
+    mask_u2.scatter_(1, rand_u2, True)
 
     # make sure not cover the target
     mask_u1[mask_u0] = False
@@ -64,10 +53,8 @@ def gdkd_loss(logits_student, logits_teacher, target, eta, w0, w1, temperature, 
     p_teacher = F.softmax(soft_logits_teacher, dim=1)
 
     # accumulated term
-    # p0_student = cat_mask(p_student, mask_u0, mask_u1, mask_u2)
-    # p0_teacher = cat_mask(p_teacher, mask_u0, mask_u1, mask_u2)
-    p0_student = cat_mask(p_student, mask_u0, mask_u1)
-    p0_teacher = cat_mask(p_teacher, mask_u0, mask_u1)
+    p0_student = cat_mask(p_student, mask_u0, mask_u1, mask_u2)
+    p0_teacher = cat_mask(p_teacher, mask_u0, mask_u1, mask_u2)
 
     # Caution: p0_student.sum(1)!=1
     log_p0_student = torch.log(p0_student)
