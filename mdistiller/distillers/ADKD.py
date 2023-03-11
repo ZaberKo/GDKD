@@ -10,6 +10,8 @@ from .utils import kl_div
 from mdistiller.dataset import get_dataset
 from tqdm import tqdm
 
+import math
+
 MASK_MAGNITUDE = 1000.0
 
 
@@ -82,7 +84,6 @@ def dkd_loss(logits_student, logits_teacher, target, alpha, beta, gamma, tempera
 
     nckd_loss = (_beta*nckd).sum()/nckd.shape[0]*gamma
 
-
     return (
         alpha*tckd_loss + nckd_loss,
         tckd_loss.detach(),
@@ -153,7 +154,11 @@ class ADKD(Distiller):
         self.temperature = cfg.ADKD.T
         self.warmup = cfg.ADKD.WARMUP
         self.kl_type = cfg.ADKD.KL_TYPE
-        self.gamma = cfg.ADKD.GAMMA
+
+        self.base_gamma = cfg.ADKD.BASE_GAMMA
+        self.target_gamma = cfg.ADKD.TARGET_GAMMA
+
+        self.total_epochs = cfg.SOLVER.EPOCHS
 
         self.register_buffer(
             "beta",
@@ -164,6 +169,16 @@ class ADKD(Distiller):
         logits_student, _ = self.student(image)
         with torch.no_grad():
             logits_teacher, _ = self.teacher(image)
+
+        epoch = kwargs["epoch"]
+
+        self.gamma = (
+            self.target_gamma +
+            (self.base_gamma - self.target_gamma) * (
+                1 + math.cos(
+                    math.pi * epoch / self.total_epochs)
+            ) / 2
+        )
 
         # losses
         loss_ce = self.ce_loss_weight * F.cross_entropy(logits_student, target)
@@ -183,9 +198,10 @@ class ADKD(Distiller):
             "loss_kd": loss_kd,
         }
         return logits_student, losses_dict
-    
+
     def get_train_info(self):
         return {
+            "gamma": self.gamma,
             "tckd_loss": self.tckd_loss,
             "avg_nckd_loss": self.avg_nckd_loss
         }
