@@ -4,7 +4,7 @@ from mdistiller.engine.cfg import show_cfg, dump_cfg
 from mdistiller.engine.cfg import CFG as cfg
 from mdistiller.engine.utils import (
     load_checkpoint, log_msg, AverageMeter, accuracy)
-from mdistiller.dataset import get_dataset
+
 from mdistiller.models import cifar_model_dict, imagenet_model_dict
 import os
 import shutil
@@ -16,6 +16,8 @@ import torch.nn as nn
 import torch.backends.cudnn as cudnn
 
 import numpy as np
+
+from .utils import get_dataset
 
 
 cudnn.benchmark = True
@@ -34,14 +36,12 @@ def accuracy(output, target, topk=(1,)):
         return correct_flags
 
 
-def validate(dataloader, model, num_classes, data_path):
+def validate(dataloader, model, num_classes):
     logits_dict = {i: [] for i in range(num_classes)}
     num_iter = len(dataloader)
     pbar = tqdm(range(num_iter))
 
     model.eval()
-    with open(os.path.join(data_path, "incorrect.csv"), "w") as f:
-        f.write("class,class_id,index\n")
 
     correct_dict={i: [] for i in range(num_classes)}
     
@@ -56,8 +56,6 @@ def validate(dataloader, model, num_classes, data_path):
             
 
             correct_flags, = accuracy(logits, target, topk=(1,))
-            # save_incorrect_images(image, target, index,
-            #                       correct_flags, data_path)
 
             for j in range(num_classes):
                 logits_dict[j].append(logits[target == j])
@@ -107,22 +105,27 @@ def main(cfg):
 
     model_teacher.cuda()
 
-    data_path = f"exp/img/imagenet/{teacher_model}"
-    if os.path.exists(data_path):
-        shutil.rmtree(data_path)
-    os.makedirs(data_path)
-    logits_dict = validate(train_loader, model_teacher, num_classes, data_path)
+    # data_path = f"exp/{cfg.DATASET.TYPE}/{teacher_model}"
+    # if os.path.exists(data_path):
+    #     shutil.rmtree(data_path)
+    # os.makedirs(data_path)
+    logits_dict = validate(train_loader, model_teacher, num_classes)
 
-    np.savez(f"exp/imagenet_{teacher_model}_logits.npz", **logits_dict)
+    np.savez(f"exp/{cfg.DATASET.TYPE}_{teacher_model}_logits.npz", **logits_dict)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--cfg", type=str, default="tools/statistics/imagenet.yaml")
+    parser.add_argument("--dataset", type=str, default="imagenet")
     parser.add_argument("--model", type=str, default="ResNet34")
 
     args = parser.parse_args()
-    cfg.merge_from_file(args.cfg)
+    if args.dataset == "imagenet":
+        cfg_path = "tools/statistics/imagenet.yaml"
+    elif args.dataset == "cifar100":
+        cfg_path = "tools/statistics/cifar100.yaml"
+
+    cfg.merge_from_file(cfg_path)
     cfg.DISTILLER.TEACHER = args.model
     # cfg.merge_from_list(args.opts)
     cfg.freeze()
