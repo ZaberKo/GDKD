@@ -11,6 +11,8 @@ import torch
 import torch.nn as nn
 import torch.backends.cudnn as cudnn
 from datetime import datetime
+import numpy as np
+import random
 
 cudnn.benchmark = True
 
@@ -124,8 +126,9 @@ if __name__ == "__main__":
     parser.add_argument("--id", type=str, default="",
                         help="identifier for training instance")
     parser.add_argument("--record_loss", action="store_true")
-    parser.add_argument("--suffix", type=str, nargs="?", default="",const="")
+    parser.add_argument("--suffix", type=str, nargs="?", default="", const="")
     parser.add_argument("--resume", action="store_true")
+    parser.add_argument("--seed", type=int)
     parser.add_argument("--data_workers", type=int, default=None)
     parser.add_argument("opts", default=None, nargs=argparse.REMAINDER)
 
@@ -140,9 +143,17 @@ if __name__ == "__main__":
         if cfg.DISTILLER.TYPE == "CRD":
             raise ValueError("CRD currently does not support record loss")
         cfg.SOLVER.TRAINER = "custom"
-    
+
     if args.data_workers is not None:
         cfg.DATASET.NUM_WORKERS = int(args.data_workers)
+
+    if args.seed is not None:
+        seed = args.seed
+        torch.manual_seed(seed)
+        torch.cuda.manual_seed(seed)
+        np.random.seed(seed)
+        random.seed(seed)
+        cfg.EXPERIMENT.TAG += ",seed_"+str(seed)
 
     cfg.freeze()
     main(cfg, args.resume, args.opts, group_flag=args.group, id=args.id)

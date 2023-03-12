@@ -5,8 +5,12 @@ from torchvision import datasets, transforms
 from PIL import Image
 
 
+from .cutout import Cutout
+
+
 def get_data_folder():
-    data_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../data")
+    data_folder = os.path.join(os.path.dirname(
+        os.path.abspath(__file__)), "../../data")
     if not os.path.isdir(data_folder):
         os.makedirs(data_folder)
     return data_folder
@@ -106,12 +110,36 @@ class CIFAR100InstanceSample(datasets.CIFAR100):
                 pos_idx = pos_idx[0]
             else:
                 raise NotImplementedError(self.mode)
-            replace = True if self.k > len(self.cls_negative[target]) else False
+            replace = True if self.k > len(
+                self.cls_negative[target]) else False
             neg_idx = np.random.choice(
                 self.cls_negative[target], self.k, replace=replace
             )
             sample_idx = np.hstack((np.asarray([pos_idx]), neg_idx))
             return img, target, index, sample_idx
+
+
+def get_cifar100_train_transform_with_autoaugment():
+    try:
+        from torchvision.transforms import AutoAugment, AutoAugmentPolicy
+        autoaugment = AutoAugment(AutoAugmentPolicy.CIFAR10, fill=128)
+    except ModuleNotFoundError:
+        from .autoaugment import CIFAR10Policy
+        autoaugment = CIFAR10Policy()
+
+    train_transform = transforms.Compose(
+        [
+            transforms.RandomCrop(32, padding=4),
+            transforms.RandomHorizontalFlip(),
+            autoaugment,
+            transforms.ToTensor(),
+            Cutout(n_holes=1, length=16),
+            transforms.Normalize(
+                (0.5071, 0.4867, 0.4408), (0.2675, 0.2565, 0.2761)),
+        ]
+    )
+
+    return train_transform
 
 
 def get_cifar100_train_transform():
@@ -120,7 +148,8 @@ def get_cifar100_train_transform():
             transforms.RandomCrop(32, padding=4),
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
-            transforms.Normalize((0.5071, 0.4867, 0.4408), (0.2675, 0.2565, 0.2761)),
+            transforms.Normalize((0.5071, 0.4867, 0.4408),
+                                 (0.2675, 0.2565, 0.2761)),
         ]
     )
 
@@ -131,14 +160,18 @@ def get_cifar100_test_transform():
     return transforms.Compose(
         [
             transforms.ToTensor(),
-            transforms.Normalize((0.5071, 0.4867, 0.4408), (0.2675, 0.2565, 0.2761)),
+            transforms.Normalize((0.5071, 0.4867, 0.4408),
+                                 (0.2675, 0.2565, 0.2761)),
         ]
     )
 
 
-def get_cifar100_dataloaders(batch_size, val_batch_size, num_workers):
+def get_cifar100_dataloaders(batch_size, val_batch_size, num_workers, enhance_augment=False):
     data_folder = get_data_folder()
-    train_transform = get_cifar100_train_transform()
+    if enhance_augment:
+        train_transform = get_cifar100_train_transform_with_autoaugment()
+    else:
+        train_transform = get_cifar100_train_transform()
     test_transform = get_cifar100_test_transform()
     train_set = CIFAR100Instance(
         root=data_folder, download=True, train=True, transform=train_transform
@@ -162,10 +195,13 @@ def get_cifar100_dataloaders(batch_size, val_batch_size, num_workers):
 
 # CIFAR-100 for CRD
 def get_cifar100_dataloaders_sample(
-    batch_size, val_batch_size, num_workers, k, mode="exact"
+    batch_size, val_batch_size, num_workers, k, mode="exact", enhance_augment=False
 ):
     data_folder = get_data_folder()
-    train_transform = get_cifar100_train_transform()
+    if enhance_augment:
+        train_transform = get_cifar100_train_transform_with_autoaugment()
+    else:
+        train_transform = get_cifar100_train_transform()
     test_transform = get_cifar100_test_transform()
 
     train_set = CIFAR100InstanceSample(

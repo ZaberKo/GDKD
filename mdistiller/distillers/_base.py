@@ -43,23 +43,15 @@ class Distiller(nn.Module):
         return {}
 
 
-class Vanilla(nn.Module):
+class Vanilla(Distiller):
     def __init__(self, student):
-        super(Vanilla, self).__init__()
-        self.student = student
-
-    def get_learnable_parameters(self):
-        return [v for k, v in self.student.named_parameters()]
+        teacher = nn.Identity() # dummy
+        super(Vanilla, self).__init__(student, teacher)
+        
+    def train(self, mode=True):
+        super(Distiller, self).train(mode)
 
     def forward_train(self, image, target, **kwargs):
         logits_student, _ = self.student(image)
         loss = F.cross_entropy(logits_student, target)
         return logits_student, {"ce": loss}
-
-    def forward(self, **kwargs):
-        if self.training:
-            return self.forward_train(**kwargs)
-        return self.forward_test(kwargs["image"])
-
-    def forward_test(self, image):
-        return self.student(image)[0]

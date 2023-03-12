@@ -11,17 +11,23 @@ def get_dataset(cfg, is_distributed=False):
                 num_workers=cfg.DATASET.NUM_WORKERS,
                 k=cfg.CRD.NCE.K,
                 mode=cfg.CRD.MODE,
+                enhance_augment=cfg.DATASET.ENHANCE_AUGMENT
             )
         else:
             train_loader, val_loader, num_data = get_cifar100_dataloaders(
                 batch_size=cfg.SOLVER.BATCH_SIZE,
                 val_batch_size=cfg.DATASET.TEST.BATCH_SIZE,
                 num_workers=cfg.DATASET.NUM_WORKERS,
+                enhance_augment=cfg.DATASET.ENHANCE_AUGMENT
             )
         num_classes = 100
     elif cfg.DATASET.TYPE == "imagenet":
         if is_distributed:
             print("Enable DistributedSampler for imagenet dataset")
+
+        if cfg.DATASET.ENHANCE_AUGMENT:
+            raise ValueError("Enhance augment is not supported for imagenet dataset")
+
         if cfg.DISTILLER.TYPE == "CRD":
             train_loader, val_loader, num_data = get_imagenet_dataloaders_sample(
                 batch_size=cfg.SOLVER.BATCH_SIZE,

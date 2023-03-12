@@ -264,7 +264,7 @@ class CRDTrainer(BaseTrainer):
 
 class RecordTrainer(BaseTrainer):
     """
-        Add record for ce_loss and kd_loss
+        Add additional training records
     """
 
     def __init__(self, experiment_name, distiller, train_loader, val_loader, cfg, is_distributed=False, local_rank=0):
@@ -277,15 +277,17 @@ class RecordTrainer(BaseTrainer):
 
     def train_epoch(self, epoch):
         lr = adjust_learning_rate(epoch, self.cfg, self.optimizer)
-        train_meters = {
-            "training_time": AverageMeter(),
-            "data_time": AverageMeter(),
-            "losses": AverageMeter(),
-            "top1": AverageMeter(),
-            "top5": AverageMeter(),
-            "loss_ce": AverageMeter(),
-            "loss_kd": AverageMeter(),
-        }
+        # train_meters = {
+        #     "training_time": AverageMeter(),
+        #     "data_time": AverageMeter(),
+        #     "losses": AverageMeter(),
+        #     "top1": AverageMeter(),
+        #     "top5": AverageMeter(),
+        #     "loss_ce": AverageMeter(),
+        #     "loss_kd": AverageMeter(),
+        # }
+        self.train_meters = defaultdict(AverageMeter)
+        train_meters = self.train_meters
         self.train_info_meters = defaultdict(AverageMeter)
 
         if self.is_distributed:
@@ -320,9 +322,11 @@ class RecordTrainer(BaseTrainer):
                     "test_acc_top5": test_acc_top5,
                     "test_loss": test_loss,
                     "train_loss_ce": train_meters["loss_ce"].avg,
-                    "train_loss_kd": train_meters["loss_kd"].avg,
                 }
             )
+            if "loss_kd" in train_meters:
+                log_dict["train_loss_kd"]=train_meters["loss_kd"].avg
+
             log_dict.update({
                 k: v.avg for k, v in self.train_info_meters.items()
             })
