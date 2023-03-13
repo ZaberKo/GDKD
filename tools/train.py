@@ -4,7 +4,12 @@ from mdistiller.engine.cfg import CFG as cfg
 from mdistiller.engine.utils import load_checkpoint, log_msg
 from mdistiller.dataset import get_dataset
 from mdistiller.distillers import distiller_dict
-from mdistiller.models import cifar_model_dict, imagenet_model_dict
+from mdistiller.models import (
+    cifar_model_dict, 
+    cifar_aug_model_dict,
+    imagenet_model_dict
+)
+
 import os
 import argparse
 import torch
@@ -73,7 +78,10 @@ def main(cfg, resume, opts, group_flag=False, id=""):
             model_student = imagenet_model_dict[cfg.DISTILLER.STUDENT](
                 pretrained=False)
         else:
-            net, pretrain_model_path = cifar_model_dict[cfg.DISTILLER.TEACHER]
+            if cfg.DATASET.ENHANCE_AUGMENT:
+                net, pretrain_model_path = cifar_aug_model_dict[cfg.DISTILLER.TEACHER]
+            else:
+                net, pretrain_model_path = cifar_model_dict[cfg.DISTILLER.TEACHER]
             assert (
                 pretrain_model_path is not None
             ), "no pretrain model for teacher {}".format(cfg.DISTILLER.TEACHER)
@@ -146,6 +154,9 @@ if __name__ == "__main__":
 
     if args.data_workers is not None:
         cfg.DATASET.NUM_WORKERS = int(args.data_workers)
+
+    if cfg.DATASET.ENHANCE_AUGMENT:
+        cfg.EXPERIMENT.TAG += ",aug"
 
     if args.seed is not None:
         seed = args.seed

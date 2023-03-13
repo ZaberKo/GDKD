@@ -19,7 +19,7 @@ from .ShuffleNetv2 import ShuffleV2
 
 
 cifar100_model_prefix = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), 
+    os.path.dirname(os.path.abspath(__file__)),
     "../../../download_ckpts/cifar_teachers/"
 )
 cifar_model_dict = {
@@ -44,7 +44,10 @@ cifar_model_dict = {
         wrn_40_2,
         cifar100_model_prefix + "wrn_40_2_vanilla/ckpt_epoch_240.pth",
     ),
-    "vgg13": (vgg13_bn, cifar100_model_prefix + "vgg13_vanilla/ckpt_epoch_240.pth"),
+    "vgg13": (
+        vgg13_bn,
+        cifar100_model_prefix + "vgg13_vanilla/ckpt_epoch_240.pth"
+    ),
     # students
     "resnet8": (resnet8, None),
     "resnet14": (resnet14, None),
@@ -63,4 +66,33 @@ cifar_model_dict = {
     "MobileNetV2": (mobile_half, None),
     "ShuffleV1": (ShuffleV1, None),
     "ShuffleV2": (ShuffleV2, None),
+}
+
+
+cifar_aug_model_dict = {
+    # teachers
+    "resnet56": (
+        resnet56,
+        cifar100_model_prefix + "resnet56_aug/ckpt_epoch_240.pth",
+    ),
+    "resnet110": (
+        resnet110,
+        cifar100_model_prefix + "resnet110_aug/ckpt_epoch_240.pth",
+    ),
+    "resnet32x4": (
+        resnet32x4,
+        cifar100_model_prefix + "resnet32x4_aug/ckpt_epoch_240.pth",
+    ),
+    "ResNet50": (
+        ResNet50,
+        cifar100_model_prefix + "ResNet50_aug/ckpt_epoch_240.pth",
+    ),
+    "wrn_40_2": (
+        wrn_40_2,
+        cifar100_model_prefix + "wrn_40_2_aug/ckpt_epoch_240.pth",
+    ),
+    "vgg13": (
+        vgg13_bn,
+        cifar100_model_prefix + "vgg13_aug/ckpt_epoch_240.pth"
+    ),
 }

@@ -4,8 +4,12 @@ from mdistiller.engine.cfg import show_cfg, dump_cfg
 from mdistiller.engine.cfg import CFG as cfg
 from mdistiller.engine.utils import (
     load_checkpoint, log_msg, AverageMeter, accuracy)
+from mdistiller.models import (
+    cifar_model_dict, 
+    cifar_aug_model_dict,
+    imagenet_model_dict
+)
 
-from mdistiller.models import cifar_model_dict, imagenet_model_dict
 import os
 import shutil
 import argparse
@@ -84,18 +88,21 @@ def validate(dataloader, model, num_classes):
     return res
 
 
-def main(cfg):
+def main(cfg, use_val_transform=False):
     teacher_model = cfg.DISTILLER.TEACHER
 
     show_cfg(cfg)
-    train_loader, val_loader, num_data, num_classes = get_dataset(cfg)
+    train_loader, val_loader, num_data, num_classes = get_dataset(cfg, use_val_transform)
 
     print(log_msg("Loading teacher model", "INFO"))
     if cfg.DATASET.TYPE == "imagenet":
         model_teacher = imagenet_model_dict[teacher_model](
             pretrained=True)
     else:
-        net, pretrain_model_path = cifar_model_dict[teacher_model]
+        if cfg.DATASET.ENHANCE_AUGMENT:
+            net, pretrain_model_path = cifar_aug_model_dict[teacher_model]
+        else:
+            net, pretrain_model_path = cifar_model_dict[teacher_model]
         assert (
             pretrain_model_path is not None
         ), "no pretrain model for teacher {}".format(teacher_model)
@@ -111,22 +118,25 @@ def main(cfg):
     # os.makedirs(data_path)
     logits_dict = validate(train_loader, model_teacher, num_classes)
 
-    np.savez(f"exp/{cfg.DATASET.TYPE}_{teacher_model}_logits.npz", **logits_dict)
+    np.savez(f'exp/{cfg.DATASET.TYPE}_{teacher_model}{"_aug" if cfg.DATASET.ENHANCE_AUGMENT else ""}_logits.npz', **logits_dict)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=str, default="imagenet")
     parser.add_argument("--model", type=str, default="ResNet34")
+    parser.add_argument("--use_val_transform", action="store_true")
 
     args = parser.parse_args()
     if args.dataset == "imagenet":
         cfg_path = "tools/statistics/imagenet.yaml"
     elif args.dataset == "cifar100":
         cfg_path = "tools/statistics/cifar100.yaml"
+    elif args.dataset == "cifar100_aug":
+        cfg_path = "tools/statistics/cifar100_aug.yaml"
 
     cfg.merge_from_file(cfg_path)
     cfg.DISTILLER.TEACHER = args.model
     # cfg.merge_from_list(args.opts)
     cfg.freeze()
-    main(cfg)
+    main(cfg, use_val_transform=args.use_val_transform)
