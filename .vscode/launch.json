@@ -24,15 +24,21 @@
             "name": "logits_dist",
             "type": "python",
             "request": "launch",
-            "module": "exp.calc_dataset_logits_dist",
-            "justMyCode": true
+            "module": "tools.statistics.calc_imagenet_teacher_logits",
+            "justMyCode": true,
+            "args": [
+                "--dataset",
+                "cifar100_aug",
+                "--model",
+                "resnet32x4",
+            ]
         },
         {
             "name": "logits_grad",
             "type": "python",
             "request": "launch",
             "module": "exp.calc_dataset_logits_grad_dist",
-            "justMyCode": true
+            "justMyCode": true,
         },
         {
             "name": "Train ddp",
@@ -68,9 +74,14 @@
             "args": [
                 "--cfg",
                 // "configs/cifar100/adkd/res32x4_res8x4.yaml",
-                "configs/cifar100/crd.yaml",
+                // "configs/cifar100/crd.yaml",
                 // "configs/cifar100/adkd/wrn40_2_shuv1.yaml",
+                // "configs/cifar100/adkd/vgg13_vgg8.yaml",
+                // "configs/cifar100/adkd/res110_res32.yaml",
+                // "configs/cifar100/adkd/res50_mv2.yaml",
                 // "configs/cifar100/adkd/res56_res20.yaml",
+                // "configs/cifar100/teacher/res32x4.yaml",
+                "configs/cifar100/gdkd/res56_res20.yaml",
                 "--record_loss",
                 "DATASET.ENHANCE_AUGMENT",
                 "True",
@@ -102,7 +113,7 @@
             "type": "python",
             "request": "launch",
             // "program": "tools/train.py",
-            "module": "tools.train_debug",
+            "module": "tools.statistics.train_debug",
             "console": "integratedTerminal",
             "justMyCode": false,
         }

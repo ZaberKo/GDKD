@@ -77,7 +77,7 @@ def get_imagenet_dataloaders(batch_size, val_batch_size,
     return train_loader, test_loader, num_data
 
 
-def get_dataset(cfg, use_val_transform):
+def get_dataset(cfg, use_val_transform=False):
     if cfg.DATASET.TYPE == "cifar100":
         train_loader, val_loader, num_data = get_cifar100_dataloaders(
             batch_size=cfg.SOLVER.BATCH_SIZE,
