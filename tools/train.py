@@ -149,8 +149,9 @@ if __name__ == "__main__":
 
     if args.record_loss:
         if cfg.DISTILLER.TYPE == "CRD":
-            raise ValueError("CRD currently does not support record loss")
-        cfg.SOLVER.TRAINER = "custom"
+            cfg.SOLVER.TRAINER = "custom_crd"
+        else:
+            cfg.SOLVER.TRAINER = "custom"
 
     if args.data_workers is not None:
         cfg.DATASET.NUM_WORKERS = int(args.data_workers)

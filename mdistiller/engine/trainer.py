@@ -175,11 +175,11 @@ class BaseTrainer(object):
         self.optimizer.zero_grad()
         train_start_time = time.time()
         image, target, index = data
-        train_meters["data_time"].update(time.time() - train_start_time)
         image = image.float()
-        image = image.cuda(non_blocking=True)
-        target = target.cuda(non_blocking=True)
-        index = index.cuda(non_blocking=True)
+        image = image.cuda()
+        target = target.cuda()
+        index = index.cuda()
+        train_meters["data_time"].update(time.time() - train_start_time)
 
         # forward
         preds, losses_dict = self.distiller(
@@ -220,12 +220,13 @@ class CRDTrainer(BaseTrainer):
         self.optimizer.zero_grad()
         train_start_time = time.time()
         image, target, index, contrastive_index = data
-        train_meters["data_time"].update(time.time() - train_start_time)
+
         image = image.float()
-        image = image.cuda(non_blocking=True)
-        target = target.cuda(non_blocking=True)
-        index = index.cuda(non_blocking=True)
-        contrastive_index = contrastive_index.cuda(non_blocking=True)
+        image = image.cuda()
+        target = target.cuda()
+        index = index.cuda()
+        contrastive_index = contrastive_index.cuda()
+        train_meters["data_time"].update(time.time() - train_start_time)
 
         # forward
         preds, losses_dict = self.distiller(
@@ -364,11 +365,11 @@ class RecordTrainer(BaseTrainer):
         self.optimizer.zero_grad()
         train_start_time = time.time()
         image, target, index = data
-        train_meters["data_time"].update(time.time() - train_start_time)
         image = image.float()
-        image = image.cuda(non_blocking=True)
-        target = target.cuda(non_blocking=True)
-        index = index.cuda(non_blocking=True)
+        image = image.cuda()
+        target = target.cuda()
+        index = index.cuda()
+        train_meters["data_time"].update(time.time() - train_start_time)
 
         # forward
         preds, losses_dict = self.distiller(
@@ -406,6 +407,60 @@ class RecordTrainer(BaseTrainer):
             loss = reduce_tensor(loss.detach())
             train_meters[name].update(loss.cpu().numpy().mean(), batch_size)
 
+        # print info
+        msg = "Epoch:{}| Time(data):{:.3f}| Time(train):{:.3f}| Loss:{:.4f}| Top-1:{:.3f}| Top-5:{:.3f}".format(
+            epoch,
+            train_meters["data_time"].avg,
+            train_meters["training_time"].avg,
+            train_meters["losses"].avg,
+            train_meters["top1"].avg,
+            train_meters["top5"].avg,
+        )
+        return msg
+
+class CRDRecordTrainer(RecordTrainer):
+    def train_iter(self, data, epoch, train_meters):
+        self.optimizer.zero_grad()
+        train_start_time = time.time()
+        image, target, index, contrastive_index = data
+        image = image.float()
+        image = image.cuda()
+        target = target.cuda()
+        index = index.cuda()
+        contrastive_index = contrastive_index.cuda()
+        train_meters["data_time"].update(time.time() - train_start_time)
+
+        # forward
+        preds, losses_dict = self.distiller(
+            image=image, target=target, index=index, contrastive_index=contrastive_index
+        )
+
+        # backward
+        loss = sum([l.mean() for l in losses_dict.values()])
+        loss.backward()
+        self.optimizer.step()
+        train_meters["training_time"].update(time.time() - train_start_time)
+        # collect info
+        batch_size = image.size(0)
+        acc1, acc5 = accuracy(preds, target, topk=(1, 5))
+
+        # for dist training
+        loss = reduce_tensor(loss.detach())
+        acc1 = reduce_tensor(acc1)
+        acc5 = reduce_tensor(acc5)
+
+        train_info = self.distiller.module.get_train_info()
+        for key, info in train_info.items():
+            if isinstance(info, torch.Tensor):
+                info = reduce_tensor(info)
+                self.train_info_meters[key].update(
+                    info.cpu().numpy().mean(), batch_size
+                )
+
+        train_meters["losses"].update(
+            loss.cpu().numpy().mean(), batch_size)
+        train_meters["top1"].update(acc1.item(), batch_size)
+        train_meters["top5"].update(acc5.item(), batch_size)
         # print info
         msg = "Epoch:{}| Time(data):{:.3f}| Time(train):{:.3f}| Loss:{:.4f}| Top-1:{:.3f}| Top-5:{:.3f}".format(
             epoch,
