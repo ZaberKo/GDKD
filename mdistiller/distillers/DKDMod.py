@@ -67,11 +67,11 @@ def dkd_loss(logits_student, logits_teacher, target, alpha, beta, temperature, m
         * (temperature**2)
     )
 
-    log_p2_teacher = F.log_softmax(
-        logits_teacher / temperature - mask_magnitude * gt_mask, dim=1
-    )
     log_p2_student = F.log_softmax(
-        logits_student / temperature - mask_magnitude * gt_mask, dim=1
+        soft_logits_student - mask_magnitude * gt_mask, dim=1
+    )
+    log_p2_teacher = F.log_softmax(
+        soft_logits_teacher - mask_magnitude * gt_mask, dim=1
     )
 
     nckd_loss = kl_div(log_p2_student,
