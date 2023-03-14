@@ -9,15 +9,14 @@ MASK_MAGNITUDE = 1000.0
 
 
 def get_masks(logits, k=5, strategy="best"):
-    ranks = logits.argsort(dim=-1)
-
     if strategy == "best":
-        # use top k from teacher
-        ranks = ranks[:, -k:]
+        largest_flag = True
     elif strategy == "worst":
-        ranks = ranks[:, :k]
+        largest_flag = False
     else:
         raise ValueError(f"Unknown strategy: {strategy}")
+
+    ranks = torch.topk(logits, k, dim=1, largest=largest_flag, sorted=False).indices
 
     # top 5 mask
     mask_u1 = torch.zeros_like(logits, dtype=torch.bool).scatter_(1, ranks, 1)
