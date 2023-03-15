@@ -16,7 +16,9 @@ def get_masks(logits, k=5, strategy="best"):
     else:
         raise ValueError(f"Unknown strategy: {strategy}")
 
-    ranks = torch.topk(logits, k, dim=1, largest=largest_flag, sorted=False).indices
+    ranks = torch.topk(logits, k, dim=-1,
+                       largest=largest_flag,
+                       sorted=False).indices
 
     # top 5 mask
     mask_u1 = torch.zeros_like(logits, dtype=torch.bool).scatter_(1, ranks, 1)
