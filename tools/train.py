@@ -5,9 +5,10 @@ from mdistiller.engine.utils import load_checkpoint, log_msg
 from mdistiller.dataset import get_dataset
 from mdistiller.distillers import distiller_dict
 from mdistiller.models import (
-    cifar_model_dict, 
+    cifar_model_dict,
     cifar_aug_model_dict,
-    imagenet_model_dict
+    imagenet_model_dict,
+    model_tag_dict
 )
 
 import os
@@ -138,11 +139,20 @@ if __name__ == "__main__":
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--seed", type=int)
     parser.add_argument("--data_workers", type=int, default=None)
+    parser.add_argument("--teacher", type=str)
+    parser.add_argument("--student", type=str)
     parser.add_argument("opts", default=None, nargs=argparse.REMAINDER)
 
     args = parser.parse_args()
     cfg.merge_from_file(args.cfg)
     cfg.merge_from_list(args.opts)
+
+    if args.teacher is not None and args.student is not None:
+        cfg.DISTILLER.TEACHER = args.teacher
+        cfg.DISTILLER.STUDENT = args.student
+        # update tags:
+        cfg.EXPERIMENT.TAG = cfg.EXPERIMENT.TAG.split(
+            ",")[0] + f",{model_tag_dict[args.teacher]},{model_tag_dict[args.student]}"
 
     if args.suffix != "":
         cfg.EXPERIMENT.TAG += ","+args.suffix
