@@ -118,7 +118,9 @@ def main(cfg, use_val_transform=False):
     # os.makedirs(data_path)
     logits_dict = validate(train_loader, model_teacher, num_classes)
 
-    np.savez(f'exp/{cfg.DATASET.TYPE}_{teacher_model}{"_aug" if cfg.DATASET.ENHANCE_AUGMENT else ""}_logits.npz', **logits_dict)
+
+
+    np.savez(f'exp/{cfg.DATASET.TYPE}_{teacher_model}{"_aug" if cfg.DATASET.ENHANCE_AUGMENT else ""}_logits{"_val" if use_val_transform else ""}.npz', **logits_dict)
 
 
 if __name__ == "__main__":
@@ -138,5 +140,7 @@ if __name__ == "__main__":
     cfg.merge_from_file(cfg_path)
     cfg.DISTILLER.TEACHER = args.model
     # cfg.merge_from_list(args.opts)
+    if args.use_val_transform:
+        print("Use val transform")
     cfg.freeze()
     main(cfg, use_val_transform=args.use_val_transform)
