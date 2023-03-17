@@ -1,11 +1,11 @@
 EXPERIMENT:
   NAME: ""
-  TAG: "vanilla,res32x4,res8x4"
+  TAG: "vanilla,res20"
   PROJECT: "cifar100_baselines"
 DISTILLER:
   TYPE: "NONE"
-  TEACHER: "resnet32x4"
-  STUDENT: "resnet8x4"
+  TEACHER: ""
+  STUDENT: "resnet20"
 SOLVER:
   BATCH_SIZE: 64
   EPOCHS: 240
@@ -15,4 +15,3 @@ SOLVER:
   WEIGHT_DECAY: 0.0005
   MOMENTUM: 0.9
   TYPE: "SGD"
-

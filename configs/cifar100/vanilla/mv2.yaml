@@ -4,7 +4,7 @@ EXPERIMENT:
   PROJECT: "cifar100_baselines"
 DISTILLER:
   TYPE: "NONE"
-  TEACHER: "ResNet50"
+  TEACHER: ""
   STUDENT: "MobileNetV2"
 SOLVER:
   BATCH_SIZE: 64

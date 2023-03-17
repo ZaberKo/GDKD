@@ -1,11 +1,11 @@
 EXPERIMENT:
   NAME: ""
-  TAG: "vanilla,res56,res20"
+  TAG: "vanilla,res32"
   PROJECT: "cifar100_baselines"
 DISTILLER:
   TYPE: "NONE"
-  TEACHER: "resnet56"
-  STUDENT: "resnet20"
+  TEACHER: ""
+  STUDENT: "resnet32"
 SOLVER:
   BATCH_SIZE: 64
   EPOCHS: 240

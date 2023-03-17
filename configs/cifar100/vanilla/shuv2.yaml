@@ -1,11 +1,11 @@
 EXPERIMENT:
   NAME: ""
-  TAG: "vanilla,vgg13,mv2"
+  TAG: "vanilla,shuv2"
   PROJECT: "cifar100_baselines"
 DISTILLER:
   TYPE: "NONE"
-  TEACHER: "vgg13"
-  STUDENT: "MobileNetV2"
+  TEACHER: ""
+  STUDENT: "ShuffleV2"
 SOLVER:
   BATCH_SIZE: 64
   EPOCHS: 240
@@ -15,3 +15,4 @@ SOLVER:
   WEIGHT_DECAY: 0.0005
   MOMENTUM: 0.9
   TYPE: "SGD"
+
