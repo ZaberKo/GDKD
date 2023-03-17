@@ -1,6 +1,6 @@
 EXPERIMENT:
   NAME: ""
-  TAG: "vanilla,res50,mv2"
+  TAG: "vanilla,mv2"
   PROJECT: "cifar100_baselines"
 DISTILLER:
   TYPE: "NONE"
