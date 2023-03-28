@@ -94,12 +94,12 @@ def main(cfg, resume, opts, group_flag=False, id=""):
     experiment_name = "cifar100_baselines/dkdmod,res32x4,res8x4|LOG.WANDB:False_bak"
     log_path = os.path.join(cfg.LOG.PREFIX, experiment_name)
 
-    suffix = "aug_top1"
-    load_flag = False
-    # load_flag = True
+    suffix = ""
+    # load_flag = False
+    load_flag = True
 
     if load_flag:
-        epochs=[0]+list(range(40,240,40))
+        epochs=[0]+list(range(40,241,40))
     else:
         epochs = [240]
 
@@ -133,8 +133,8 @@ if __name__ == "__main__":
     cfg.SOLVER.TRAINER = "custom"
     # cfg.DKDMOD.BETA = 8
 
-    cfg.DKDMOD.STRATEGY = "top1"
-    cfg.DATASET.ENHANCE_AUGMENT = True
+    cfg.DKDMOD.STRATEGY = "target"
+    cfg.DATASET.ENHANCE_AUGMENT = False
 
     cfg.freeze()
     main(cfg, False, [], group_flag=False, id="")
