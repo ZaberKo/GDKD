@@ -8,6 +8,7 @@ from tools.train import main as train
 from mdistiller.engine.cfg import CFG as cfg
 from mdistiller.engine.utils import log_msg
 
+
 @ray.remote
 def run(cfg, resume, opts, worker_id, gpu_id):
     os.environ["CUDA_VISIBLE_DEVICES"] = str(gpu_id)
@@ -33,20 +34,21 @@ def run(cfg, resume, opts, worker_id, gpu_id):
                 print(
                     log_msg(f"worker {worker_id} failed to exit wandb: {e}", "ERROR"))
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("training for knowledge distillation.")
     parser.add_argument("--cfg", type=str, default="")
     parser.add_argument("--num_tests", type=int, default=1)
     parser.add_argument("--resume", action="store_true")
-    parser.add_argument("opts", default=None, nargs=argparse.REMAINDER)
+    parser.add_argument("opts", nargs="*")
 
     args = parser.parse_args()
     cfg.merge_from_file(args.cfg)
     cfg.merge_from_list(args.opts)
     cfg.freeze()
 
-    gpu_ids=os.environ.get("CUDA_VISIBLE_DEVICES", "0").split(",")
-    gpu_ids=[int(i) for i in gpu_ids]
+    gpu_ids = os.environ.get("CUDA_VISIBLE_DEVICES", "0").split(",")
+    gpu_ids = [int(i) for i in gpu_ids]
 
     gpu_cnt = 0
 

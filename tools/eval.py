@@ -23,7 +23,7 @@ if __name__ == "__main__":
         default="cifar100",
         choices=["cifar100", "imagenet"],
     )
-    parser.add_argument("-bs", "--batch-size", type=int, default=64)
+    parser.add_argument("--bs", "--batch-size", type=int, default=64)
     args = parser.parse_args()
 
     cfg.DATASET.TYPE = args.dataset

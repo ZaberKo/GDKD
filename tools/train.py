@@ -141,7 +141,7 @@ if __name__ == "__main__":
     parser.add_argument("--data_workers", type=int, default=None)
     parser.add_argument("--teacher", type=str)
     parser.add_argument("--student", type=str)
-    parser.add_argument("opts", default=None, nargs=argparse.REMAINDER)
+    parser.add_argument("opts", nargs="*")
 
     args = parser.parse_args()
     cfg.merge_from_file(args.cfg)
