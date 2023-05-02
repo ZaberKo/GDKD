@@ -24,11 +24,11 @@ def get_masks(logits, topks):
     #     for j in ranks[:topks[i]]:
     #         mask_u1[i, j] = True
 
-    device = ranks.device
-    ranks = ranks.cpu()
+    # device = ranks.device
+    # ranks = ranks.cpu()
     for i in range(logits.shape[0]):
         ranks[i, topks[i]:] = ranks[i][0]
-    ranks = ranks.to(device)
+    # ranks = ranks.to(device)
 
     # topk mask
     mask_u1 = torch.zeros_like(logits, dtype=torch.bool).scatter_(1, ranks, 1)
@@ -46,7 +46,7 @@ def cat_mask(t, mask1, mask2):
 
 
 def gdkd_loss(logits_student, logits_teacher, target, topk_arr, w0, w1, w2, temperature, kl_type):
-    mask_u1, mask_u2 = get_masks(logits_teacher, topk_arr[target.cpu()])
+    mask_u1, mask_u2 = get_masks(logits_teacher, topk_arr[target])
 
     soft_logits_student = logits_student / temperature
     soft_logits_teacher = logits_teacher / temperature
@@ -146,8 +146,8 @@ class GDKDAutok(Distiller):
                 self.prebuild_topk_th, self.prebuild_ratio_th
             )
 
-        # self.register_buffer("topk_arr", topk_arr)
-        self.topk_arr = topk_arr
+        self.register_buffer("topk_arr", topk_arr)
+        # self.topk_arr = topk_arr
 
     def forward_train(self, image, target, **kwargs):
         logits_student, _ = self.student(image)
