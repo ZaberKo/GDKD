@@ -115,6 +115,21 @@
             ]
         },
         {
+            "name": "Train GDKDAUTOK",
+            "type": "python",
+            "request": "launch",
+            // "program": "tools/train.py",
+            "module": "tools.train",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "args": [
+                "--cfg",
+                "configs/cifar100/gdkd_autok/res32x4_res8x4.yaml",
+                "LOG.WANDB",
+                "False",
+            ]
+        },
+        {
             "name": "Train debug",
             "type": "python",
             "request": "launch",

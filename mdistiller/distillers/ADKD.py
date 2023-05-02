@@ -5,10 +5,10 @@ import torch.nn.functional as F
 import numpy as np
 
 from ._base import Distiller
-from .utils import kl_div
+from .utils import kl_div, validate
 
 from mdistiller.dataset import get_dataset
-from tqdm import tqdm
+
 
 import math
 
@@ -91,27 +91,7 @@ def dkd_loss(logits_student, logits_teacher, target, alpha, beta, gamma, tempera
     )
 
 
-def validate(dataloader, model, num_classes):
-    logits_dict = [[] for _ in range(num_classes)]
 
-    model = model.cuda()
-    model.eval()
-    with torch.no_grad():
-        for i, (image, target, index) in tqdm(enumerate(dataloader), total=len(dataloader)):
-            image = image.float()
-            image = image.cuda(non_blocking=True)
-            target = target.cuda(non_blocking=True)
-            logits, _ = model(image)
-
-            for j in range(num_classes):
-                logits_dict[j].append(logits[target == j])
-
-    res = []
-    for i in range(num_classes):
-        res.append(
-            torch.concat(logits_dict[i])
-        )
-    return res
 
 
 def prebuild_beta(teacher, cfg, T=4.0, preload_path=None):
@@ -146,6 +126,9 @@ def prebuild_beta(teacher, cfg, T=4.0, preload_path=None):
 
 
 class ADKD(Distiller):
+    """
+        Auto adjust beta in DKD
+    """
     def __init__(self, student, teacher, cfg):
         super(ADKD, self).__init__(student, teacher)
         self.ce_loss_weight = cfg.ADKD.CE_WEIGHT

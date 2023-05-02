@@ -16,6 +16,7 @@ from .GDKD import GDKD
 from .SGDKD import SGDKD
 from .ADKD import ADKD
 from .DKDMod import DKDMod
+from .GDKDAutok import GDKDAutok
 
 distiller_dict = {
     "NONE": Vanilla,
@@ -35,5 +36,6 @@ distiller_dict = {
     "GDKD": GDKD,
     "SGDKD": SGDKD,
     "ADKD": ADKD,
-    "DKDMod": DKDMod
+    "DKDMod": DKDMod,
+    "GDKDAutok": GDKDAutok,
 }

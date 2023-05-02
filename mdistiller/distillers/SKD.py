@@ -36,6 +36,9 @@ def kd_loss(logits_student, logits_teacher, target, eta, temperature, kl_type):
 
 
 class SKD(Distiller):
+    """
+        KD with stochastic partial logits distillation
+    """
     def __init__(self, student, teacher, cfg):
         super(SKD, self).__init__(student, teacher)
         self.ce_weight = cfg.SKD.CE_WEIGHT
