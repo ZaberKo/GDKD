@@ -114,7 +114,7 @@ class MobileNetV2(nn.Module):
         self.avgpool = nn.AvgPool2d(H, ceil_mode=True)
 
         self._initialize_weights()
-        print(T, width_mult)
+        # print(T, width_mult)
         self.stage_channels = [32, 24, 32, 96, 320]
         self.stage_channels = [int(c * width_mult) for c in self.stage_channels]
 
