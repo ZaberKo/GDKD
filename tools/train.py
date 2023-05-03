@@ -162,6 +162,9 @@ if __name__ == "__main__":
             cfg.SOLVER.TRAINER = "custom_crd"
         else:
             cfg.SOLVER.TRAINER = "custom"
+    else:
+        if cfg.DISTILLER.TYPE == "CRD":
+            cfg.SOLVER.TRAINER = "crd"
 
     if args.data_workers is not None:
         cfg.DATASET.NUM_WORKERS = int(args.data_workers)

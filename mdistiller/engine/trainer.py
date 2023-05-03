@@ -287,8 +287,7 @@ class RecordTrainer(BaseTrainer):
         #     "loss_ce": AverageMeter(),
         #     "loss_kd": AverageMeter(),
         # }
-        self.train_meters = defaultdict(AverageMeter)
-        train_meters = self.train_meters
+        train_meters = defaultdict(AverageMeter)
         self.train_info_meters = defaultdict(AverageMeter)
 
         if self.is_distributed:

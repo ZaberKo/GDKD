@@ -19,16 +19,20 @@ from mdistiller.dataset.imagenet import (
     get_imagenet_val_loader
 )
 
+"""
+    This file contains the dataloader used for test.
+    Add new option `use_val_transform` for trainset
+"""
+
 
 def get_cifar100_dataloaders(batch_size, val_batch_size, num_workers, use_val_transform, use_aug=False):
     data_folder = get_data_folder()
     if use_val_transform:
         train_transform = get_cifar100_test_transform()
+    elif use_aug:
+        train_transform = get_cifar100_train_transform_with_autoaugment()
     else:
-        if use_aug:
-            train_transform = get_cifar100_train_transform_with_autoaugment()
-        else:
-            train_transform = get_cifar100_train_transform()
+        train_transform = get_cifar100_train_transform()
 
     test_transform = get_cifar100_test_transform()
     train_set = CIFAR100Instance(
@@ -51,15 +55,15 @@ def get_cifar100_dataloaders(batch_size, val_batch_size, num_workers, use_val_tr
     return train_loader, test_loader, num_data
 
 
-def get_imagenet_dataloaders(batch_size, val_batch_size, 
+def get_imagenet_dataloaders(batch_size, val_batch_size,
                              num_workers, use_val_transform,
-                             mean=[0.485, 0.456, 0.406], 
+                             mean=[0.485, 0.456, 0.406],
                              std=[0.229, 0.224, 0.225]):
     if use_val_transform:
         train_transform = get_imagenet_test_transform(mean, std)
     else:
         train_transform = get_imagenet_train_transform(mean, std)
-    
+
     train_folder = os.path.join(data_folder, 'train')
     train_set = ImageNet(train_folder, transform=train_transform)
     num_data = len(train_set)
