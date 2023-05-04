@@ -66,23 +66,38 @@ def main(cfg, resume, opts, group_flag=False, id=""):
     # distiller = DKDMod(model_student, model_teacher, cfg)
     distiller = distiller.cuda()
 
-    data=next(iter(train_loader))
+    data = next(iter(train_loader))
 
     image, target, index = data
     image = image.cuda(non_blocking=True)
 
-
     t_logits, t_feats = distiller.teacher(image)
-    print(f"Teacher {cfg.DISTILLER.TEACHER}:",t_feats["pooled_feat"].shape)
-
     s_logits, s_feats = distiller.student(image)
-    print(f"Student {cfg.DISTILLER.STUDENT}:", s_feats["pooled_feat"].shape)
+
+    shapes = [1, *[feat.shape[-1] for feat in s_feats["feats"][::-1][:-1]]]
+    out_shapes = [1, *[feat.shape[-1] for feat in t_feats["feats"][::-1][:-1]]]
+    in_channels = [*[feat.shape[1] for feat in s_feats["feats"][1:]],
+                   s_feats["pooled_feat"].shape[1],]
+    out_channels = [*[feat.shape[1] for feat in t_feats["feats"][1:]],
+                    t_feats["pooled_feat"].shape[1]]
+
+    print(f"Teacher {cfg.DISTILLER.TEACHER}:")
+    print(f"Student {cfg.DISTILLER.STUDENT}:")
+    print(f"""
+REVIEWKD:
+  SHAPES: {shapes}
+  OUT_SHAPES: {out_shapes}
+  IN_CHANNELS: {in_channels}
+  OUT_CHANNELS: {out_channels}
+    """)
 
 
 # for training with original python reqs
 if __name__ == "__main__":
 
-    cfg.merge_from_file("configs/cifar100/dkdmod/res32x4_shuv2.yaml")
+    # cfg.merge_from_file("configs/cifar100/dkdmod/res56_res20.yaml")
+    cfg.merge_from_file("configs/cifar100/dkdmod/wrn40_2_wrn_40_1.yaml")
+    # cfg.merge_from_file("configs/cifar100/dkdmod/res32x4_res8x4.yaml")
     # cfg.merge_from_file("configs/cifar100/crd/res32x4_shuv2.yaml")
     cfg.SOLVER.TRAINER = "custom"
     # cfg.DKDMOD.BETA = 8
