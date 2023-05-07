@@ -18,7 +18,14 @@ def get_masks(logits, topks):
                        largest=True,
                        sorted=True).indices
 
+    # TODO: efficient way?
+    # mask_u1 = torch.zeros_like(logits, dtype=torch.bool)
+    # for i in range(mask_u1.shape[0]):
+    #     for j in ranks[:topks[i]]:
+    #         mask_u1[i, j] = True
 
+    # device = ranks.device
+    # ranks = ranks.cpu()
     for i in range(logits.shape[0]):
         ranks[i, topks[i]:] = ranks[i][0]
     # ranks = ranks.to(device)
@@ -38,35 +45,8 @@ def cat_mask(t, mask1, mask2):
     return rt
 
 
-def calc_topk(logits, topk_th, ratio_th):
-    num_classes = logits.shape[1]
-    x = torch.arange(1, num_classes+1).to(logits.device)
-
-    probs = F.softmax(logits, dim=1)
-    probs = probs.sort(dim=1, descending=False).values
-
-    cumavg = probs.cumsum(dim=1)/x
-    ratio = probs/cumavg
-
-    topk_arr = []
-    for r in ratio:
-        idx = torch.nonzero(r >= ratio_th).squeeze(1)
-        if len(idx):
-            topk = 100-idx[0].item()
-        else:
-            topk = 100
-        topk_arr.append(topk)
-
-    topk_arr = torch.as_tensor(topk_arr)
-
-    return topk_arr 
-
-
-def gdkd_loss(logits_student, logits_teacher, target, topk_th, ratio_th, w0, w1, w2, temperature, kl_type):
-
-    topks = calc_topk(logits_teacher, topk_th, ratio_th)
-
-    mask_u1, mask_u2 = get_masks(logits_teacher, topks)
+def gdkd_loss(logits_student, logits_teacher, target, topk_arr, w0, w1, w2, temperature, kl_type):
+    mask_u1, mask_u2 = get_masks(logits_teacher, topk_arr[target])
 
     soft_logits_student = logits_student / temperature
     soft_logits_teacher = logits_teacher / temperature
@@ -112,6 +92,35 @@ def gdkd_loss(logits_student, logits_teacher, target, topk_th, ratio_th, w0, w1,
         low_other_loss.detach()
     )
 
+
+def prebuild_topk(teacher, cfg, T, topk_th, ratio_th):
+    topk_arr = []
+    train_loader, val_loader, num_data, num_classes = get_dataset(cfg)
+    logits_arr = validate(train_loader, teacher, num_classes)
+
+    for i in range(num_classes):
+        logits = logits_arr[i].cpu()
+        probs = F.softmax(logits/T, dim=1)
+        probs_avg = probs.mean(axis=0)
+        probs_avg = probs_avg.sort(descending=False).values
+        cumavg = probs_avg.cumsum(dim=0)/(torch.arange(1, num_classes+1))
+        ratio = probs_avg/cumavg
+        idx = torch.nonzero(ratio >= ratio_th).squeeze(1)
+
+        if len(idx):
+            topk = 100-idx[0]
+        else:
+            topk = 1
+
+        topk = min(topk, topk_th)
+
+        topk_arr.append(topk)
+
+    topk_arr = torch.tensor(topk_arr, dtype=torch.long)
+
+    return topk_arr
+
+
 class GDKDAutok(Distiller):
     def __init__(self, student, teacher, cfg):
         super(GDKDAutok, self).__init__(student, teacher)
@@ -123,9 +132,22 @@ class GDKDAutok(Distiller):
         self.warmup = cfg.GDKDAUTOK.WARMUP
         self.kl_type = cfg.GDKDAUTOK.KL_TYPE
 
-        self.topk_th = cfg.GDKDAUTOK.TOPK_TH
-        self.ratio_th = cfg.GDKDAUTOK.RATIO_TH
+        self.prebuild_topk_th = cfg.GDKDAUTOK.PREBUILD_TOPK_TH
+        self.prebuild_ratio_th = cfg.GDKDAUTOK.PREBUILD_RATIO_TH
+        self.prebuild_path = cfg.GDKDAUTOK.PRELOAD_TOPK_PATH
 
+        if self.prebuild_path:
+            with open(self.preload_path, "rb") as f:
+                topk_arr = yaml.safe_load(f)
+            topk_arr = torch.tensor(topk_arr, dtype=torch.long)
+        else:
+            topk_arr = prebuild_topk(
+                self.teacher, cfg, self.temperature,
+                self.prebuild_topk_th, self.prebuild_ratio_th
+            )
+
+        self.register_buffer("topk_arr", topk_arr)
+        # self.topk_arr = topk_arr
 
     def forward_train(self, image, target, **kwargs):
         logits_student, _ = self.student(image)
@@ -138,8 +160,7 @@ class GDKDAutok(Distiller):
             logits_student,
             logits_teacher,
             target,
-            self.topk_th,
-            self.ratio_th,
+            self.topk_arr,
             self.w0,
             self.w1,
             self.w2,
