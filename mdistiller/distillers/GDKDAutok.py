@@ -18,7 +18,6 @@ def get_masks(logits, topks):
                        largest=True,
                        sorted=True).indices
 
-
     for i in range(logits.shape[0]):
         ranks[i, topks[i]:] = ranks[i][0]
     # ranks = ranks.to(device)
@@ -38,11 +37,10 @@ def cat_mask(t, mask1, mask2):
     return rt
 
 
-def calc_topk(logits, topk_th, ratio_th):
-    num_classes = logits.shape[1]
-    x = torch.arange(1, num_classes+1).to(logits.device)
+def calc_topk(probs, topk_th, ratio_th):
+    num_classes = probs.shape[1]
+    x = torch.arange(1, num_classes+1).to(probs.device)
 
-    probs = F.softmax(logits, dim=1)
     probs = probs.sort(dim=1, descending=False).values
 
     cumavg = probs.cumsum(dim=1)/x
@@ -54,25 +52,28 @@ def calc_topk(logits, topk_th, ratio_th):
         if len(idx):
             topk = 100-idx[0].item()
         else:
-            topk = 100
+            topk = 1
+
+        topk = min(topk, topk_th)
+
         topk_arr.append(topk)
 
     topk_arr = torch.as_tensor(topk_arr)
 
-    return topk_arr 
+    return topk_arr
 
 
 def gdkd_loss(logits_student, logits_teacher, target, topk_th, ratio_th, w0, w1, w2, temperature, kl_type):
-
-    topks = calc_topk(logits_teacher, topk_th, ratio_th)
-
-    mask_u1, mask_u2 = get_masks(logits_teacher, topks)
 
     soft_logits_student = logits_student / temperature
     soft_logits_teacher = logits_teacher / temperature
 
     p_student = F.softmax(soft_logits_student, dim=1)
     p_teacher = F.softmax(soft_logits_teacher, dim=1)
+
+    topks = calc_topk(p_teacher, topk_th, ratio_th)
+
+    mask_u1, mask_u2 = get_masks(logits_teacher, topks)
 
     # accumulated term
     p0_student = cat_mask(p_student, mask_u1, mask_u2)
@@ -112,6 +113,7 @@ def gdkd_loss(logits_student, logits_teacher, target, topk_th, ratio_th, w0, w1,
         low_other_loss.detach()
     )
 
+
 class GDKDAutok(Distiller):
     def __init__(self, student, teacher, cfg):
         super(GDKDAutok, self).__init__(student, teacher)
@@ -125,7 +127,6 @@ class GDKDAutok(Distiller):
 
         self.topk_th = cfg.GDKDAUTOK.TOPK_TH
         self.ratio_th = cfg.GDKDAUTOK.RATIO_TH
-
 
     def forward_train(self, image, target, **kwargs):
         logits_student, _ = self.student(image)
