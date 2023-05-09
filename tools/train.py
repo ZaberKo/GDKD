@@ -100,7 +100,15 @@ def main(cfg, resume, opts, group_flag=False, id=""):
             distiller = distiller_dict[cfg.DISTILLER.TYPE](
                 model_student, model_teacher, cfg
             )
+
+    # backward compatibility:
+    # We recommanded to only use one GPU
+    # https://github.com/pytorch/pytorch/issues/65936
     distiller = torch.nn.DataParallel(distiller.cuda())
+
+    if int(os.environ.get("USE_TORCH_COMPILE", "0")):
+        print(log_msg("Enable torch.compile", "INFO"))
+        distiller = torch.compile(distiller, mode="reduce-overhead")
 
     if cfg.DISTILLER.TYPE != "NONE":
         print(
