@@ -189,4 +189,15 @@ if __name__ == "__main__":
         cfg.EXPERIMENT.TAG += ",seed_"+str(seed)
 
     cfg.freeze()
+
+    # Note: tmp bug fix for torch 1.13.1 & 2.0.0
+    # from pprint import pprint
+    # pprint(dict(os.environ))
+    import psutil
+    p=psutil.Process()
+    # print("+"*20)
+    cpus = list(range(psutil.cpu_count()))
+    print(psutil.Process().cpu_affinity())
+    psutil.Process().cpu_affinity(cpus)
+    
     main(cfg, args.resume, args.opts, group_flag=args.group, id=args.id)
