@@ -123,22 +123,26 @@ def _loss_kd(logits_student, logits_teacher, target, temperature):
     return loss, ori_ratio
 
 
-def record_grad(logits_student, logits_teacher, target, alpha, beta, temperature, mask_magnitude, kl_type, epoch, iters, suffix,  tckd_grad_list, nckd_grad_list, idx_list, strategy="target"):
+def record_grad(logits_student, logits_teacher, target, alpha, beta, temperature, mask_magnitude, kl_type, epoch, iters, suffix, distiller, strategy="target"):
     logits_student = logits_student.detach().cpu().clone()
     logits_student.requires_grad = True
 
     logits_teacher = logits_teacher.cpu()
     target = target.cpu()
 
+    distiller.logits_t_list.append(logits_teacher.detach())
+    distiller.logits_s_list.append(logits_student.detach())
+
     if strategy == "target":
         gt_mask = _get_gt_mask(logits_teacher, target)
         other_mask = _get_other_mask(logits_teacher, target)
-        idx_list.append(target)
     elif strategy == "top1":
-        max_idx, gt_mask, other_mask = get_top1_masks(logits_teacher, target, return_idx=True)
-        idx_list.append(max_idx)
+        gt_mask, other_mask = get_top1_masks(
+            logits_teacher, target)
     else:
         raise ValueError("Unknown strategy: {}".format(strategy))
+
+    distiller.target_list.append(target)
 
     soft_logits_student = logits_student / temperature
     soft_logits_teacher = logits_teacher / temperature
@@ -150,7 +154,7 @@ def record_grad(logits_student, logits_teacher, target, alpha, beta, temperature
     tckd_loss.backward()
     tckd_grad = logits_student.grad.clone()
     logits_student.grad.zero_()
-    tckd_grad_list.append(tckd_grad)
+    distiller.tckd_grad_list.append(tckd_grad)
 
     soft_logits_student = logits_student / temperature
     soft_logits_teacher = logits_teacher / temperature
@@ -161,7 +165,7 @@ def record_grad(logits_student, logits_teacher, target, alpha, beta, temperature
     nckd_loss.backward()
     nckd_grad = logits_student.grad.clone()
     logits_student.grad.zero_()
-    nckd_grad_list.append(nckd_grad)
+    distiller.nckd_grad_list.append(nckd_grad)
 
     # loss.backward()
     # grad = logits_student.grad.detach()
@@ -190,9 +194,13 @@ def record_grad(logits_student, logits_teacher, target, alpha, beta, temperature
     # data_str = [str(i) for i in data_str]
     # log_file.write(",".join(data_str)+"\n")
     if iters >= 782:
-        tckd_grad_list = torch.cat(tckd_grad_list, dim=0).numpy()
-        nckd_grad_list = torch.cat(nckd_grad_list, dim=0).numpy()
-        idx_list = torch.cat(idx_list, dim=0).numpy()
+        tckd_grad_list = torch.cat(distiller.tckd_grad_list, dim=0).numpy()
+        nckd_grad_list = torch.cat(distiller.nckd_grad_list, dim=0).numpy()
+        target_list = torch.cat(distiller.target_list, dim=0).numpy()
+        logits_t_list = torch.cat(distiller.logits_t_list, dim=0).numpy()
+        logits_s_list = torch.cat(distiller.logits_s_list, dim=0).numpy()
+
+
 
         suffix = '_'+suffix if suffix != '' else ''
 
@@ -200,7 +208,9 @@ def record_grad(logits_student, logits_teacher, target, alpha, beta, temperature
             f"exp/grad/resnet32x4_8x4_grad_epoch{epoch}{suffix}.npz",
             tckd_grad=tckd_grad_list,
             nckd_grad=nckd_grad_list,
-            idx=idx_list
+            logits_t=logits_t_list,
+            logits_s=logits_s_list,
+            target=target_list,
         )
 
 
@@ -225,19 +235,19 @@ class DKDMod(Distiller):
         self.mask_magnitude = cfg.DKDMOD.MASK_MAGNITUDE
         self.strategy = cfg.DKDMOD.STRATEGY
 
-        self.iters = 0
-        self.tckd_grad_list = []
-        self.nckd_grad_list = []
-        self.idx_list = []
+        self.reset_record()
         # self.log_file = Path(f"{cfg.DISTILLER.TEACHER}_{cfg.DISTILLER.STUDENT}_DKDMod_grad_beta{cfg.DKDMOD.BETA}.csv").open("w")
 
         # self.log_file.write("target_norm,other_norm,ratio\n")
 
-    def clean_record(self):
+    def reset_record(self):
+        self.iters = 0
         self.tckd_grad_list = []
         self.nckd_grad_list = []
-        self.idx_list = []
-        self.iters = 0
+        self.target_list = []
+        self.logits_t_list =[]
+        self.logits_s_list = []
+        
 
     def forward_train(self, image, target, **kwargs):
         logits_student, _ = self.student(image)
@@ -260,9 +270,7 @@ class DKDMod(Distiller):
             epoch=kwargs["epoch"],
             iters=self.iters,
             suffix=kwargs["suffix"],
-            tckd_grad_list=self.tckd_grad_list,
-            nckd_grad_list=self.nckd_grad_list,
-            idx_list=self.idx_list,
+            distiller=self,
             strategy=self.strategy,
         )
 

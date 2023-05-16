@@ -75,7 +75,7 @@ def main(cfg):
     experiment_name = "cifar100_baselines/dkdmod,res32x4,res8x4|LOG.WANDB:False_bak"
     log_path = os.path.join(cfg.LOG.PREFIX, experiment_name)
 
-    suffix = ""
+    suffix = "aug"
     # load_flag = False
     load_flag = True
 
@@ -116,7 +116,7 @@ if __name__ == "__main__":
     # cfg.DKDMOD.BETA = 8
 
     cfg.DKDMOD.STRATEGY = "target"
-    cfg.DATASET.ENHANCE_AUGMENT = False
+    cfg.DATASET.ENHANCE_AUGMENT = True
 
     cfg.freeze()
     main(cfg)

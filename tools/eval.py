@@ -23,7 +23,7 @@ if __name__ == "__main__":
         default="cifar100",
         choices=["cifar100", "imagenet"],
     )
-    parser.add_argument("--bs", "--batch-size", type=int, default=64)
+    parser.add_argument("--batch_size", type=int, default=64)
     args = parser.parse_args()
 
     cfg.DATASET.TYPE = args.dataset
@@ -45,3 +45,4 @@ if __name__ == "__main__":
     model = model.cuda()
     model = torch.nn.DataParallel(model)
     test_acc, test_acc_top5, test_loss = validate(val_loader, model)
+    print(f"test_acc:{test_acc:.4f}, test_acc_top5:{test_acc_top5:.4f}, test_loss:{test_loss:.4f}")
