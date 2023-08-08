@@ -127,3 +127,5 @@ download_ckpts/
 
 # exp folder:
 exp/
+
+!configs/cifar100/dist/
