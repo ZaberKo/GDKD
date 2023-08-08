@@ -48,22 +48,28 @@ def cat_mask(t, mask1, mask2):
     return rt
 
 
-def _loss_tckd(soft_logits_student, soft_logits_teacher, gt_mask, other_mask, temperature):
+def _loss_tckd(logits_student, logits_teacher, gt_mask, other_mask, temperature):
+    soft_logits_student = logits_student / temperature
+    soft_logits_teacher = logits_teacher / temperature
     p_student = F.softmax(soft_logits_student, dim=1)
     p_teacher = F.softmax(soft_logits_teacher, dim=1)
     p0_student = cat_mask(p_student, gt_mask, other_mask)
     p0_teacher = cat_mask(p_teacher, gt_mask, other_mask)
 
     log_p0_student = torch.log(p0_student)
+    # Note: be careful for kl_div batchmean, which divides by batch size
+    # Here we want individual grads, so not need average.
     tckd_loss = (
-        F.kl_div(log_p0_student, p0_teacher, reduction="batchmean")
+        F.kl_div(log_p0_student, p0_teacher, reduction="sum")
         * (temperature**2)
     )
 
     return tckd_loss
 
 
-def _loss_nckd(soft_logits_student, soft_logits_teacher, gt_mask, other_mask, temperature, mask_magnitude, kl_type):
+def _loss_nckd(logits_student, logits_teacher, gt_mask, other_mask, temperature, mask_magnitude, kl_type):
+    soft_logits_student = logits_student / temperature
+    soft_logits_teacher = logits_teacher / temperature
     log_p2_teacher = F.log_softmax(
         soft_logits_teacher - mask_magnitude * gt_mask, dim=1
     )
@@ -72,7 +78,7 @@ def _loss_nckd(soft_logits_student, soft_logits_teacher, gt_mask, other_mask, te
     )
 
     nckd_loss = kl_div(log_p2_student,
-                       log_p2_teacher, temperature, kl_type=kl_type)
+                       log_p2_teacher, temperature, kl_type=kl_type, reduction="sum")
 
     return nckd_loss
 
@@ -86,13 +92,12 @@ def _loss_dkd(logits_student, logits_teacher, target, alpha, beta, temperature, 
     else:
         raise ValueError("Unknown strategy: {}".format(strategy))
 
-    soft_logits_student = logits_student / temperature
-    soft_logits_teacher = logits_teacher / temperature
+
 
     tckd_loss = _loss_tckd(
-        soft_logits_student, soft_logits_teacher, gt_mask, other_mask, temperature)
+        logits_student, logits_teacher, gt_mask, other_mask, temperature)
 
-    nckd_loss = _loss_nckd(soft_logits_student, soft_logits_teacher,
+    nckd_loss = _loss_nckd(logits_student, logits_teacher,
                            gt_mask, other_mask, temperature, mask_magnitude, kl_type)
 
     loss = alpha*tckd_loss + beta*nckd_loss
@@ -108,30 +113,28 @@ def _loss_dkd_ce(logits_student, logits_teacher, target, alpha, beta, temperatur
     return loss
 
 
-def _loss_kd(logits_student, logits_teacher, target, temperature):
+def _loss_kd(logits_student, logits_teacher, temperature):
     soft_logits_student = logits_student / temperature
     soft_logits_teacher = logits_teacher / temperature
 
     log_p_student = F.log_softmax(soft_logits_student, dim=1)
     log_p_teacher = F.log_softmax(soft_logits_teacher, dim=1)
 
-    p_teacher = F.softmax(soft_logits_teacher, dim=1)
-    ori_ratio = 1-p_teacher.gather(1, target.unsqueeze(1)).squeeze(1)
+    loss = kl_div(log_p_student, log_p_teacher, temperature, kl_type="forward", reduction="sum") 
 
-    loss = kl_div(log_p_student, log_p_teacher, temperature, kl_type="forward")
-
-    return loss, ori_ratio
+    return loss
 
 
-def record_grad(logits_student, logits_teacher, target, alpha, beta, temperature, mask_magnitude, kl_type, epoch, iters, suffix, distiller, strategy="target"):
-    logits_student = logits_student.detach().cpu().clone()
+def record_grad(logits_student, logits_teacher, target, temperature, mask_magnitude, kl_type, strategy, distiller):
+    distiller.logits_t_list.append(logits_teacher.detach().cpu())
+    distiller.logits_s_list.append(logits_student.detach().cpu())
+
+
+    logits_student = logits_student.detach().clone()
     logits_student.requires_grad = True
 
-    logits_teacher = logits_teacher.cpu()
-    target = target.cpu()
-
-    distiller.logits_t_list.append(logits_teacher.detach())
-    distiller.logits_s_list.append(logits_student.detach())
+    # logits_teacher = logits_teacher.cpu()
+    # target = target.cpu()
 
     if strategy == "target":
         gt_mask = _get_gt_mask(logits_teacher, target)
@@ -142,76 +145,32 @@ def record_grad(logits_student, logits_teacher, target, alpha, beta, temperature
     else:
         raise ValueError("Unknown strategy: {}".format(strategy))
 
-    distiller.target_list.append(target)
+    distiller.target_list.append(target.cpu())
 
-    soft_logits_student = logits_student / temperature
-    soft_logits_teacher = logits_teacher / temperature
+
 
     tckd_loss = _loss_tckd(
-        soft_logits_student, soft_logits_teacher, gt_mask, other_mask, temperature)
-
-    # loss = tckd_loss
+        logits_student, logits_teacher, gt_mask, other_mask, temperature)
     tckd_loss.backward()
     tckd_grad = logits_student.grad.clone()
     logits_student.grad.zero_()
-    distiller.tckd_grad_list.append(tckd_grad)
+    distiller.tckd_grad_list.append(tckd_grad.cpu())
 
-    soft_logits_student = logits_student / temperature
-    soft_logits_teacher = logits_teacher / temperature
 
-    nckd_loss = _loss_nckd(soft_logits_student, soft_logits_teacher,
+    nckd_loss = _loss_nckd(logits_student, logits_teacher,
                            gt_mask, other_mask, temperature, mask_magnitude, kl_type)
-
     nckd_loss.backward()
     nckd_grad = logits_student.grad.clone()
     logits_student.grad.zero_()
-    distiller.nckd_grad_list.append(nckd_grad)
+    distiller.nckd_grad_list.append(nckd_grad.cpu())
 
-    # loss.backward()
-    # grad = logits_student.grad.detach()
-    # target_grad = grad.gather(1, target.unsqueeze(1)).squeeze(1)
-    # other_grad = grad.scatter(1, target.unsqueeze(1), 0)
-    # # target_norm = target_grad.abs().mean()
-    # # other_norm = other_grad.norm(p=2, dim=1).mean()
-    # target_norm = target_grad.abs()
-    # # other_norm = other_grad.norm(p=2, dim=1)
-    # other_norm = other_grad.abs().mean(dim=1)
-    # global target_norm_list, other_norm_list, i
-    # target_norm_list.append(target_norm)
-    # other_norm_list.append(other_norm)
-
-    # if suffix == "kd":
-    #     ori_ratio_list.append(ori_ratio)
-    #     teacher_logits_list.append(logits_teacher)
-
-    # target_norm = target_grad.norm(p=2)
-    # other_norm = other_grad.norm(p=2)
-    # print(f"target/other: {(target_norm/other_norm).item()} target: {target_norm.item()} other: {other_norm.item()}")
+    kd_loss = _loss_kd(logits_student, logits_teacher, temperature)
+    kd_loss.backward()
+    kd_grad = logits_student.grad.clone()
     logits_student.grad.zero_()
-
-    # data_str = [target_norm.item(), other_norm.item(),
-    #             (target_norm/other_norm).item()]
-    # data_str = [str(i) for i in data_str]
-    # log_file.write(",".join(data_str)+"\n")
-    if iters >= 782:
-        tckd_grad_list = torch.cat(distiller.tckd_grad_list, dim=0).numpy()
-        nckd_grad_list = torch.cat(distiller.nckd_grad_list, dim=0).numpy()
-        target_list = torch.cat(distiller.target_list, dim=0).numpy()
-        logits_t_list = torch.cat(distiller.logits_t_list, dim=0).numpy()
-        logits_s_list = torch.cat(distiller.logits_s_list, dim=0).numpy()
+    distiller.kd_grad_list.append(kd_grad.cpu())
 
 
-
-        suffix = '_'+suffix if suffix != '' else ''
-
-        np.savez(
-            f"exp/grad/resnet32x4_8x4_grad_epoch{epoch}{suffix}.npz",
-            tckd_grad=tckd_grad_list,
-            nckd_grad=nckd_grad_list,
-            logits_t=logits_t_list,
-            logits_s=logits_s_list,
-            target=target_list,
-        )
 
 
 def dkd_loss(logits_student, logits_teacher, target, alpha, beta, temperature, mask_magnitude, kl_type, strategy="target"):
@@ -241,52 +200,51 @@ class DKDMod(Distiller):
         # self.log_file.write("target_norm,other_norm,ratio\n")
 
     def reset_record(self):
-        self.iters = 0
         self.tckd_grad_list = []
         self.nckd_grad_list = []
         self.target_list = []
         self.logits_t_list =[]
         self.logits_s_list = []
+        self.kd_grad_list = []
+
+    def save_record(self, path):
+        tckd_grad_list = torch.cat(self.tckd_grad_list, dim=0).numpy()
+        nckd_grad_list = torch.cat(self.nckd_grad_list, dim=0).numpy()
+        target_list = torch.cat(self.target_list, dim=0).numpy()
+        logits_t_list = torch.cat(self.logits_t_list, dim=0).numpy()
+        logits_s_list = torch.cat(self.logits_s_list, dim=0).numpy()
+        kd_grad_list = torch.cat(self.kd_grad_list, dim=0).numpy()
+
+        folder_path=Path(path).parent
+        if not folder_path.exists():
+            folder_path.mkdir(parents=True, exist_ok=True)
+
+
+        np.savez(
+            # f"exp/grad/resnet32x4_8x4_grad_epoch{epoch}{suffix}.npz",
+            path,
+            tckd_grad=tckd_grad_list,
+            nckd_grad=nckd_grad_list,
+            logits_t=logits_t_list,
+            logits_s=logits_s_list,
+            target=target_list,
+            kd_grad=kd_grad_list
+        )
         
 
-    def forward_train(self, image, target, **kwargs):
+    def record_grad(self, image, target):
         logits_student, _ = self.student(image)
         with torch.no_grad():
             logits_teacher, _ = self.teacher(image)
 
-        # losses
-        loss_ce = self.ce_loss_weight * F.cross_entropy(logits_student, target)
-
-        self.iters += 1
         record_grad(
             logits_student,
             logits_teacher,
             target,
-            self.alpha,
-            self.beta,
             temperature=self.temperature,
             mask_magnitude=self.mask_magnitude,
             kl_type=self.kl_type,
-            epoch=kwargs["epoch"],
-            iters=self.iters,
-            suffix=kwargs["suffix"],
-            distiller=self,
             strategy=self.strategy,
+            distiller=self
         )
 
-        loss_dkd = min(kwargs["epoch"] / self.warmup, 1.0) * dkd_loss(
-            logits_student,
-            logits_teacher,
-            target,
-            self.alpha,
-            self.beta,
-            temperature=self.temperature,
-            mask_magnitude=self.mask_magnitude,
-            kl_type=self.kl_type,
-            strategy=self.strategy
-        )
-        losses_dict = {
-            "loss_ce": loss_ce,
-            "loss_kd": loss_dkd,
-        }
-        return logits_student, losses_dict

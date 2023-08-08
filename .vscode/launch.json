@@ -139,6 +139,20 @@
             "module": "tools.train_debug2",
             "console": "integratedTerminal",
             "justMyCode": false,
+        },
+        {
+            "name": "calc grad",
+            "type": "python",
+            "request": "launch",
+            // "program": "tools/train.py",
+            "module": "tools.train_debug_dkdmod",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "args": [
+                "--top",
+                "--aug",
+                "none"
+            ]
         }
     ]
 }
