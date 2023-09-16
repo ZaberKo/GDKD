@@ -94,6 +94,9 @@ def gdkd_loss(logits_student, logits_teacher, target, topk_arr, w0, w1, w2, temp
 
 
 def prebuild_topk(teacher, cfg, T, topk_th, ratio_th):
+    """
+        Pre-sample K: Based on the static teacher's logits, can be pre-built
+    """
     topk_arr = []
     train_loader, val_loader, num_data, num_classes = get_dataset(cfg)
     logits_arr = validate(train_loader, teacher, num_classes)
