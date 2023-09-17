@@ -6,7 +6,7 @@ INPUT:
 MODEL:
   PIXEL_STD: [57.375, 57.120, 58.395]
   BACKBONE:
-    NAME: "build_resnet_fpn_backbone_kd"
+    NAME: "build_resnet_fpn_backbone"
   WEIGHTS: "pretrained/r18-r101.pth"
   RESNETS:
     OUT_FEATURES: ["res2", "res3", "res4", "res5"]
