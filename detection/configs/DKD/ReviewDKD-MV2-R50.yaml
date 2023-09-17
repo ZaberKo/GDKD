@@ -1,6 +1,9 @@
 _BASE_: "../Base-Distillation.yaml"
 OUTPUT_DIR: output/ReviewDKD-MV2-R50
 
+EXPERIMENT:
+  TAG: ["ReviewDKD", "MV2", "R50"]
+
 MODEL:
   BACKBONE:
     NAME: "build_mobilenetv2_fpn_backbone"

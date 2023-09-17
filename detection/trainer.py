@@ -28,8 +28,9 @@ from detectron2.engine import create_ddp_model, TrainerBase, SimpleTrainer, AMPT
 from detectron2.solver import build_lr_scheduler, build_optimizer
 
 from distillers import KD_REGISTRY
-import model  # to register BACKBONE
+from wandb_writer import WandbWriter
 
+import model  # to register BACKBONE
 
 class DistillerCheckpointer(DetectionCheckpointer):
     def _load_model(self, checkpoint):
@@ -152,10 +153,12 @@ class Trainer(DefaultTrainer):
     def build_evaluator(cls, cfg, dataset_name, output_folder=None):
         return build_evaluator(cfg, dataset_name, output_folder)
 
-    def build_hooks(self):
-        ret = super().build_hooks()
+    def build_writers(self):
+        writers = super().build_writers()
 
-        return ret
+        writers.append(WandbWriter(self.cfg))
+
+        return writers
 
     @classmethod
     def test_with_TTA(cls, cfg, model):

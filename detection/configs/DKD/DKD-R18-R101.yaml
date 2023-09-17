@@ -1,6 +1,9 @@
 _BASE_: "../Base-Distillation.yaml"
 OUTPUT_DIR: output/DKD-R18-R101
 
+EXPERIMENT:
+  TAG: ["DKD", "R18", "R101"]
+
 INPUT:
   FORMAT: "RGB"
 MODEL:

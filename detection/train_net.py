@@ -24,6 +24,10 @@ from detectron2.evaluation import verify_results
 from trainer import DistillerCheckpointer, Trainer
 from config import get_distiller_config
 
+import os
+from datetime import datetime
+import time
+import wandb
 
 
 def setup(args):
@@ -54,6 +58,33 @@ def main(args):
             verify_results(cfg, res)
         return res
 
+    if comm.is_main_process():
+
+        tags = cfg.EXPERIMENT.TAG
+        if tags is None or len(tags) < 1:
+            tags = [cfg.KD.TYPE]
+        # tags.append(cfg.KD.TYPE)
+
+        if args.opts:
+            addtional_tags = ["{}:{}".format(k, v)
+                              for k, v in zip(args.opts[::2], args.opts[1::2])]
+            tags += addtional_tags
+
+        experiment_name = f'{cfg.EXPERIMENT.PROJECT}/{cfg.KD.TYPE}|{",".join(addtional_tags)}'
+
+        wandb.init(
+            project=cfg.EXPERIMENT.PROJECT,
+            name=experiment_name,
+            config=cfg,
+            tags=tags,
+            group=experiment_name+"_group" if args.group else None,
+            settings=wandb.Settings(start_method="fork")
+        )
+
+        cfg.defrost()
+        cfg.OUTPUT_DIR = os.path.join(cfg.OUTPUT_DIR, f'{cfg.KD.TYPE}|{",".join(addtional_tags)}_{args.id}_{datetime.now().strftime("%Y-%m-%d-%H-%M-%S")}')
+        cfg.freeze()
+
     """
     If you'd like to do anything fancier than the standard training logic,
     consider writing your own training loop (see plain_train_net.py) or
@@ -63,13 +94,25 @@ def main(args):
     trainer.resume_or_load(resume=args.resume)
     if cfg.TEST.AUG.ENABLED:
         trainer.register_hooks(
-            [hooks.EvalHook(0, lambda: trainer.test_with_TTA(cfg, trainer.model))]
+            [hooks.EvalHook(
+                0, lambda: trainer.test_with_TTA(cfg, trainer.model))]
         )
-    return trainer.train()
+
+    trainer.train()
+
+    if comm.is_main_process():
+        wandb.finish()
+
+    time.sleep(30)
 
 
 if __name__ == "__main__":
-    args = default_argument_parser().parse_args()
+    parser = default_argument_parser()
+    parser.add_argument("--id", type=str, default="",
+                        help="identifier for training instance")
+    parser.add_argument("--group", action="store_true")
+
+    args = parser.parse_args()
     print("Command Line Args:", args)
     launch(
         main,

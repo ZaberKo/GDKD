@@ -21,6 +21,12 @@ cfg.TEACHER = base_cfg.clone()
 # cfg.STUDENT.MODEL = model_cfg.clone()
 # cfg.STUDENT.INPUT = input_cfg.clone()
 
+
+cfg.EXPERIMENT = CN()
+cfg.EXPERIMENT.PROJECT = "detection_coco"
+cfg.EXPERIMENT.TAG = []
+
+
 cfg.KD = CN()
 cfg.KD.FEATURE_KD_MASK = None
 cfg.KD.TYPE = "DKD"
