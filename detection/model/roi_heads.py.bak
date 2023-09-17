@@ -1,0 +1,36 @@
+from typing import Dict, List, Optional, Tuple
+import torch
+
+from detectron2.modeling.roi_heads import StandardROIHeads
+from detectron2.structures import Boxes, ImageList, Instances
+from detectron2.modeling.roi_heads import ROI_HEADS_REGISTRY
+
+@ROI_HEADS_REGISTRY.register()
+class StandardROIHeadsKD(StandardROIHeads):
+    def _forward_box(self, features: Dict[str, torch.Tensor], proposals: List[Instances]):
+        features = [features[f] for f in self.box_in_features]
+        box_features = self.box_pooler(features, [x.proposal_boxes for x in proposals])
+        box_features = self.box_head(box_features)
+        predictions = self.box_predictor(box_features) # (scores, proposal_deltas)
+        del box_features
+
+        if self.training:
+            losses = self.box_predictor.losses(predictions, proposals)
+
+            # TODO: check
+            proposals.pred_scores = predictions[0]
+            proposals.pred_proposal_deltas = predictions[1]
+
+
+            # proposals is modified in-place below, so losses must be computed first.
+            if self.train_on_pred_boxes:
+                with torch.no_grad():
+                    pred_boxes = self.box_predictor.predict_boxes_for_gt_classes(
+                        predictions, proposals
+                    )
+                    for proposals_per_image, pred_boxes_per_image in zip(proposals, pred_boxes):
+                        proposals_per_image.proposal_boxes = Boxes(pred_boxes_per_image)
+            return losses
+        else:
+            pred_instances, _ = self.box_predictor.inference(predictions, proposals)
+            return pred_instances

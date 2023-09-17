@@ -1,10 +1,9 @@
-from .resnet import build_resnet_backbone_kd
-from .mobilenetv2 import build_mobilenetv2_backbone
 from detectron2.modeling.backbone import BACKBONE_REGISTRY, FPN
 from detectron2.modeling.backbone.fpn import LastLevelMaxPool
 from detectron2.layers import Conv2d, ShapeSpec, get_norm
 
-
+from .resnet import build_resnet_backbone_kd
+from .mobilenetv2 import build_mobilenetv2_backbone
 
 @BACKBONE_REGISTRY.register()
 def build_resnet_fpn_backbone_kd(cfg, input_shape: ShapeSpec):

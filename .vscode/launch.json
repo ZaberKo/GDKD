@@ -5,6 +5,53 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Train Detection",
+            "type": "python",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/detection",
+            "program": "train_net.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "args": [
+                "--config-file",
+                "configs/DKD/DKD-R18-R101.yaml",
+                // "configs/DKD/DKD-R50-R101.yaml",
+                // "configs/ReviewKD/ReviewKD-MV2-R50.yaml",
+                // "configs/ReviewKD/ReviewKD-R18-R101.yaml",
+                "--num-gpus",
+                "1",                
+                "OUTPUT_DIR",
+                "./output/debug",
+                "SOLVER.IMS_PER_BATCH",
+                "2",
+            ]
+        },
+        {
+            "name": "Train Detection Eval",
+            "type": "python",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/detection",
+            "program": "train_net.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "args": [
+                "--config-file",
+                "configs/DKD/DKD-R18-R101.yaml",
+                // "configs/DKD/DKD-R50-R101.yaml",
+                // "configs/ReviewKD/ReviewKD-MV2-R50.yaml",
+                // "configs/ReviewKD/ReviewKD-R18-R101.yaml",
+                "--num-gpus",
+                "1",
+                "--eval-only",                
+                "OUTPUT_DIR",
+                "./output/debug",
+                "SOLVER.IMS_PER_BATCH",
+                "2",
+                "TEST.AUG.ENABLED",
+                "True"
+            ]
+        },
+        {
             "name": "train_dist",
             "type": "python",
             "request": "launch",
@@ -61,7 +108,11 @@
                 // "LOG.ENABLE_PROGRESS_BAR",
                 // "False"
             ],
-            "env": {"LOCAL_RANK": "0", "RANK": "0", "WORLD_SIZE": "1"}
+            "env": {
+                "LOCAL_RANK": "0",
+                "RANK": "0",
+                "WORLD_SIZE": "1"
+            }
         },
         {
             "name": "Train",
