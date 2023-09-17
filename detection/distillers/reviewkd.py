@@ -7,7 +7,7 @@ from detectron2.config import configurable
 from detectron2.utils.events import get_event_storage
 
 from .build import KD_REGISTRY
-from .rcnnkd import RCNNKD
+from .base import RCNNKD
 
 
 def build_abfs(in_channels, out_channels, mid_channel):

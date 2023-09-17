@@ -15,7 +15,7 @@ from .build import KD_REGISTRY
 from .utils import freeze
 
 
-@KD_REGISTRY.register()
+
 class RCNNKD(nn.Module):
     """
     Base Distiller class for R-CNN style models.
@@ -54,16 +54,9 @@ class RCNNKD(nn.Module):
 
     @classmethod
     def from_config(cls, cfg):
-        # cfg_s = cfg.STUDENT.clone()
-        # cfg_t = cfg.TEACHER.clone()
-        # for k, v in cfg.items():
-        #     if k != "MODEL" and k != "INPUT":
-        #         cfg_s[k] = copy.deepcopy(v)
-        #         cfg_t[k] = copy.deepcopy(v)
-
         student = build_model(cfg)
 
-        if cfg.KD.TYPE == "RCNNKD":
+        if cfg.KD.TYPE == "Vanilla":
             teacher = None
         else:
             teacher = build_model(cfg.TEACHER)
@@ -133,7 +126,7 @@ class RCNNKD(nn.Module):
                 "pred_boxes", "pred_classes", "scores", "pred_masks", "pred_keypoints"
         """
 
-        return self.student.forward(batched_inputs)
+        raise NotImplementedError
 
     def inference(
         self,
@@ -145,3 +138,5 @@ class RCNNKD(nn.Module):
 
     def visualize_training(self, batched_inputs, proposals):
         return self.student.visualize_training(batched_inputs, proposals)
+
+
