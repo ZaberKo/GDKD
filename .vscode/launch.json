@@ -24,7 +24,10 @@
                 "./output/debug",
                 "SOLVER.IMS_PER_BATCH",
                 "2",
-            ]
+            ],
+            "env": {
+                "WANDB_MODE": "offline",
+            }
         },
         {
             "name": "Train Detection Eval",

@@ -27,6 +27,7 @@ from config import get_distiller_config
 import os
 from datetime import datetime
 import time
+import logging
 import wandb
 
 
@@ -45,6 +46,11 @@ def setup(args):
 
 def main(args):
     cfg = setup(args)
+
+    if args.debug:
+        cfg.defrost()
+        cfg.OUTPUT_DIR = "./output/debug"
+        cfg.freeze()
 
     if args.eval_only:
         model = Trainer.build_model(cfg)
@@ -72,17 +78,20 @@ def main(args):
 
         experiment_name = f'{cfg.EXPERIMENT.PROJECT}/{cfg.KD.TYPE}|{",".join(addtional_tags)}'
 
-        wandb.init(
-            project=cfg.EXPERIMENT.PROJECT,
-            name=experiment_name,
-            config=cfg,
-            tags=tags,
-            group=experiment_name+"_group" if args.group else None,
-            settings=wandb.Settings(start_method="fork")
-        )
+        if cfg.EXPERIMENT.WANDB:
+            wandb.init(
+                project=cfg.EXPERIMENT.PROJECT,
+                name=experiment_name,
+                # config=cfg, # set later at WandbWriter
+                tags=tags,
+                group=experiment_name+"_group" if args.group else None,
+                settings=wandb.Settings(start_method="fork")
+            )
 
         cfg.defrost()
-        cfg.OUTPUT_DIR = os.path.join(cfg.OUTPUT_DIR, f'{cfg.KD.TYPE}|{",".join(addtional_tags)}_{args.id}_{datetime.now().strftime("%Y-%m-%d-%H-%M-%S")}')
+        # cfg.OUTPUT_DIR = os.path.join(cfg.OUTPUT_DIR, f'{cfg.KD.TYPE}|{",".join(addtional_tags)}_{args.id}_{datetime.now().strftime("%Y-%m-%d-%H-%M-%S")}')
+        output_dirname = f'{cfg.KD.TYPE}|{",".join(addtional_tags)}_{wandb.run.id}'
+        cfg.OUTPUT_DIR = os.path.join(cfg.OUTPUT_DIR, output_dirname)
         cfg.freeze()
 
     """
@@ -100,17 +109,18 @@ def main(args):
 
     trainer.train()
 
-    if comm.is_main_process():
-        wandb.finish()
+    comm.synchronize()
+    logger = logging.getLogger("detectron2")
+
+    logger.info("Wait for 30 seconds before exiting")
 
     time.sleep(30)
 
 
 if __name__ == "__main__":
     parser = default_argument_parser()
-    parser.add_argument("--id", type=str, default="",
-                        help="identifier for training instance")
     parser.add_argument("--group", action="store_true")
+    parser.add_argument("--debug", action="store_true")
 
     args = parser.parse_args()
     print("Command Line Args:", args)

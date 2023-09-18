@@ -156,7 +156,8 @@ class Trainer(DefaultTrainer):
     def build_writers(self):
         writers = super().build_writers()
 
-        writers.append(WandbWriter(self.cfg))
+        if self.cfg.EXPERIMENT.WANDB:
+            writers.append(WandbWriter(self.cfg))
 
         return writers
 

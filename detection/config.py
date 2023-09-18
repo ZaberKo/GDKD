@@ -25,7 +25,7 @@ cfg.TEACHER = base_cfg.clone()
 cfg.EXPERIMENT = CN()
 cfg.EXPERIMENT.PROJECT = "detection_coco"
 cfg.EXPERIMENT.TAG = []
-
+cfg.EXPERIMENT.WANDB = True
 
 cfg.KD = CN()
 cfg.KD.FEATURE_KD_MASK = None
