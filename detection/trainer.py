@@ -27,10 +27,11 @@ from detectron2.utils.logger import setup_logger
 from detectron2.engine import create_ddp_model, TrainerBase, SimpleTrainer, AMPTrainer
 from detectron2.solver import build_lr_scheduler, build_optimizer
 
+import model  # to register BACKBONE
 from distillers import KD_REGISTRY
 from wandb_writer import WandbWriter
 
-import model  # to register BACKBONE
+
 
 class DistillerCheckpointer(DetectionCheckpointer):
     def _load_model(self, checkpoint):

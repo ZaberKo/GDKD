@@ -67,7 +67,7 @@ def main(args):
     if comm.is_main_process():
 
         tags = cfg.EXPERIMENT.TAG
-        if tags is None or len(tags) < 1:
+        if tags is None or len(tags) == 0:
             tags = [cfg.KD.TYPE]
         # tags.append(cfg.KD.TYPE)
 
@@ -76,13 +76,19 @@ def main(args):
                               for k, v in zip(args.opts[::2], args.opts[1::2])]
             tags += addtional_tags
 
-        experiment_name = f'{cfg.EXPERIMENT.PROJECT}/{cfg.KD.TYPE}|{",".join(addtional_tags)}'
+        if not cfg.EXPERIMENT.NAME:
+            experiment_name = "-".join(tags)
+        else:
+            experiment_name = cfg.EXPERIMENT.NAME
+
+        wandb_cfg=cfg.clone()
+        # wandb_cfg.defrost()
 
         if cfg.EXPERIMENT.WANDB:
             wandb.init(
                 project=cfg.EXPERIMENT.PROJECT,
                 name=experiment_name,
-                # config=cfg, # set later at WandbWriter
+                # config=wandb_cfg, # set later at WandbWriter
                 tags=tags,
                 group=experiment_name+"_group" if args.group else None,
                 settings=wandb.Settings(start_method="fork")
@@ -90,7 +96,7 @@ def main(args):
 
         cfg.defrost()
         # cfg.OUTPUT_DIR = os.path.join(cfg.OUTPUT_DIR, f'{cfg.KD.TYPE}|{",".join(addtional_tags)}_{args.id}_{datetime.now().strftime("%Y-%m-%d-%H-%M-%S")}')
-        output_dirname = f'{cfg.KD.TYPE}|{",".join(addtional_tags)}_{wandb.run.id}'
+        output_dirname = f'{experiment_name}_{wandb.run.id}'
         cfg.OUTPUT_DIR = os.path.join(cfg.OUTPUT_DIR, output_dirname)
         cfg.freeze()
 

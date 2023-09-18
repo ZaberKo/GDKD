@@ -20,14 +20,13 @@
                 // "configs/ReviewKD/ReviewKD-R18-R101.yaml",
                 "--num-gpus",
                 "1",                
-                "OUTPUT_DIR",
-                "./output/debug",
+                "--debug",
                 "SOLVER.IMS_PER_BATCH",
                 "2",
             ],
-            "env": {
-                "WANDB_MODE": "offline",
-            }
+            // "env": {
+            //     "WANDB_MODE": "offline",
+            // }
         },
         {
             "name": "Train Detection Eval",
