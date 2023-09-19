@@ -2,7 +2,7 @@ _BASE_: "../Base-Distillation_ori.yaml"
 OUTPUT_DIR: output/ReviewKD-R18-R101
 
 EXPERIMENT:
-  TAG: ["ReviewKD", "R18", "R101"]
+  TAG: ["ReviewKD", "R18", "R101", "ori"]
 
 INPUT:
   FORMAT: "RGB"

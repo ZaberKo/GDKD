@@ -2,7 +2,7 @@ _BASE_: "../Base-Distillation_ori.yaml"
 OUTPUT_DIR: output/ReviewDKD-R50-R101
 
 EXPERIMENT:
-  TAG: ["ReviewDKD", "R50", "R101"]
+  TAG: ["ReviewDKD", "R50", "R101", "ori"]
 
 MODEL:
   BACKBONE:
