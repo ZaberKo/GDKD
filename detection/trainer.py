@@ -114,7 +114,7 @@ class Trainer(DefaultTrainer):
 
         # Assume these objects must be constructed in this order.
         model = self.build_model(cfg)
-        optimizer = self.build_optimizer(cfg, model.student)
+        optimizer = self.build_optimizer(cfg, model)
         data_loader = self.build_train_loader(cfg)
 
         model = create_ddp_model(model, broadcast_buffers=False)
