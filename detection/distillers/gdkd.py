@@ -88,7 +88,7 @@ class GDKD(RCNNKD):
 def rcnn_gdkd_loss(s_predictions, t_predictions, k, w0, w1, w2, temperature):
     s_logits, s_bbox_offsets = s_predictions
     t_logits, t_bbox_offsets = t_predictions
-    gt_classes = torch.cat(tuple(gt_classes), 0).reshape(-1)
+
     loss_gdkd = gdkd_loss(s_logits, t_logits,
                           k, w0, w1, w2, temperature)
 

@@ -8,12 +8,12 @@ from detectron2.utils.events import get_event_storage
 
 from .build import KD_REGISTRY
 from .base import RCNNKD
-from .dkd import rcnn_dkd_loss
+from .gdkd import rcnn_gdkd_loss
 from .reviewkd import hcl, build_abfs
 
 
 @KD_REGISTRY.register()
-class ReviewDKD(RCNNKD):
+class ReviewGDKD(RCNNKD):
     @configurable
     def __init__(
         self,
@@ -83,13 +83,14 @@ class ReviewDKD(RCNNKD):
         t_predictions = self._forward_pure_roi_head(
             self.teacher.roi_heads, t_features, sampled_proposals)
 
-        losses["loss_dkd"] = rcnn_dkd_loss(
+        losses["loss_gdkd"] = rcnn_gdkd_loss(
             s_predictions,
             t_predictions,
-            [x.gt_classes for x in sampled_proposals],
-            self.kd_args.DKD.ALPHA,
-            self.kd_args.DKD.BETA,
-            self.kd_args.DKD.T
+            k=self.kd_args.GDKD.TOPK,
+            w0=self.kd_args.GDKD.W0,
+            w1=self.kd_args.GDKD.W1,
+            w2=self.kd_args.GDKD.W2,
+            temperature=self.kd_args.GDKD.T
         )
 
         s_features_flat = [s_features[f] for f in s_features]
