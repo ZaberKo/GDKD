@@ -116,8 +116,9 @@ def main(args):
     trainer.train()
 
     comm.synchronize()
+    if comm.is_main_process():
+        wandb.finish()
     logger = logging.getLogger("detectron2")
-
     logger.info("Wait for 30 seconds before exiting")
 
     time.sleep(30)

@@ -39,4 +39,6 @@ class WandbWriter(EventWriter):
                 wandb.log({k: v}, step=record_iter)
 
     def close(self):
-        wandb.finish()
+        # wandb.finish()
+        # call this when ddp is finished
+        pass
