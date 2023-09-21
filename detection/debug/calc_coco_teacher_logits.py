@@ -135,7 +135,7 @@ def main(args):
         checkpointer.resume_or_load(ckpt_path, resume=False)
         logits_dict = calc_pred_logits(distiller, data_loader, args.num_iter)
 
-        np.savez(output_dir/f"DKD-R18-R101-iter{i}.npz", **logits_dict)
+        np.savez(output_dir/f"DKD-R18-R101-iter{id}.npz", **logits_dict)
 
 
 if __name__ == "__main__":
