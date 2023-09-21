@@ -61,6 +61,7 @@ class DKD(RCNNKD):
             s_images, s_features, proposals, gt_instances)
 
 
+        # use sampled proposals from student's RPN to perform logits-KD
         # TODO: avoid duplicate forward for student
         s_predictions = self._forward_pure_roi_head(
             self.student.roi_heads, s_features, sampled_proposals)

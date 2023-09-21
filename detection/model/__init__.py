@@ -1,1 +1,1 @@
-from .backbone import build_mobilenetv2_fpn_backbone
+from .backbone import build_mobilenetv2_fpn_backbone, build_resnet_backbone_kd

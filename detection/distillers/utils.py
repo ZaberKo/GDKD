@@ -28,8 +28,11 @@ def kl_div(log_p, log_q, T, kl_type, reduction="batchmean"):
     return res
 
 
-def freeze(model):
+def freeze(model, freeze_bn=False):
     # model.eval()
     for p in model.parameters():
         p.requires_grad = False
-    # FrozenBatchNorm2d.convert_frozen_batchnorm(model)
+    
+    if freeze_bn:
+        #TODO: also freeze BN1d?
+        FrozenBatchNorm2d.convert_frozen_batchnorm(model)

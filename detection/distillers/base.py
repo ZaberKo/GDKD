@@ -67,6 +67,14 @@ class RCNNKD(nn.Module):
             "teacher": teacher,
             "kd_args": cfg.KD,
         }
+    
+    def train(self, mode=True):
+        """
+        Override the default train() to freeze the teacher
+        """
+        super().train(mode)
+        # always set teacher in eval mode:
+        self.teacher.eval()
 
     def preprocess_image(self, batched_inputs: List[Dict[str, torch.Tensor]]):
         return self.student.preprocess_image(batched_inputs)
@@ -85,7 +93,7 @@ class RCNNKD(nn.Module):
                 #         torch.LongTensor([2, 1, 0]))
                 #     ) for x in images
                 # ]
-                images = [x[[2, 1, 0]] for x in images]
+                images = [x.flip(0) for x in images]
             else:
                 raise NotImplementedError
         images = ImageList.from_tensors(
