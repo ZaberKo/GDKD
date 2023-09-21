@@ -5,6 +5,28 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Calc Detection Teacher logits",
+            "type": "python",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/detection",
+            "module": "debug.calc_coco_teacher_logits",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "args": [
+                "--config-file",
+                // "configs/DKD/DKD-R18-R101.yaml",
+                // "configs/DKD/DKD-R50-R101.yaml",
+                // "configs/ReviewKD/ReviewKD-MV2-R50.yaml",
+                // "configs/ReviewKD/ReviewKD-R18-R101.yaml",
+                // "configs/GDKD/GDKD-R18-R101.yaml",
+                "debug/DKD-R18-R101.yaml",
+            ],
+            "env": {
+                // "WANDB_MODE": "offline",
+                "WANDB_MODE": "disabled"
+            }
+        },
+        {
             "name": "Train Detection",
             "type": "python",
             "request": "launch",
@@ -20,6 +42,33 @@
                 // "configs/ReviewKD/ReviewKD-R18-R101.yaml",
                 // "configs/GDKD/GDKD-R18-R101.yaml",
                 "configs/GDKD/ReviewGDKD-R18-R101.yaml",
+                "--num-gpus",
+                "1",                
+                "--debug",
+                "SOLVER.IMS_PER_BATCH",
+                "2",
+            ],
+            "env": {
+                // "WANDB_MODE": "offline",
+                "WANDB_MODE": "disabled"
+            }
+        },
+        {
+            "name": "Train Detection Ori",
+            "type": "python",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/detection",
+            "program": "train_net.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "args": [
+                "--config-file",
+                // "configs/DKD/DKD-R18-R101.yaml",
+                // "configs/DKD/DKD-R50-R101.yaml",
+                // "configs/ReviewKD/ReviewKD-MV2-R50.yaml",
+                "configs/ReviewKD/ReviewKD-R18-R101_ori.yaml",
+                // "configs/GDKD/GDKD-R18-R101.yaml",
+                // "configs/GDKD/ReviewGDKD-R18-R101.yaml",
                 "--num-gpus",
                 "1",                
                 "--debug",
