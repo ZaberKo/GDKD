@@ -1,14 +1,11 @@
 import logging
 import os
-import weakref
 from collections import OrderedDict
 import torch
 
-import detectron2.utils.comm as comm
-from detectron2.checkpoint import DetectionCheckpointer
-from detectron2.config import get_cfg
+
 from detectron2.data import MetadataCatalog
-from detectron2.engine import DefaultTrainer, default_argument_parser, default_setup, hooks, launch
+from detectron2.engine import DefaultTrainer
 from detectron2.evaluation import (
     CityscapesInstanceEvaluator,
     CityscapesSemSegEvaluator,
@@ -17,15 +14,9 @@ from detectron2.evaluation import (
     DatasetEvaluators,
     LVISEvaluator,
     PascalVOCDetectionEvaluator,
-    SemSegEvaluator,
-    verify_results,
+    SemSegEvaluator
 )
 from detectron2.modeling import GeneralizedRCNNWithTTA
-from detectron2.utils.logger import setup_logger
-
-
-from detectron2.engine import create_ddp_model, TrainerBase, SimpleTrainer, AMPTrainer
-from detectron2.solver import build_lr_scheduler, build_optimizer
 
 import model  # to register BACKBONE
 from distillers import KD_REGISTRY
@@ -33,20 +24,20 @@ from wandb_writer import WandbWriter
 
 
 
-class DistillerCheckpointer(DetectionCheckpointer):
-    def _load_model(self, checkpoint):
-        new_ckpt = {}
+# class DistillerCheckpointer(DetectionCheckpointer):
+#     def _load_model(self, checkpoint):
+#         new_ckpt = {}
 
-        for k, v in checkpoint['model'].items():
-            if "teacher" == k.split('.')[0]:
-                new_ckpt[k] = v
-            else:
-                new_ckpt["student."+k] = v
+#         for k, v in checkpoint['model'].items():
+#             if "teacher" == k.split('.')[0]:
+#                 new_ckpt[k] = v
+#             else:
+#                 new_ckpt["student."+k] = v
 
-        checkpoint['model'] = new_ckpt
+#         checkpoint['model'] = new_ckpt
 
-        incompatible = super()._load_model(checkpoint)
-        return incompatible
+#         incompatible = super()._load_model(checkpoint)
+#         return incompatible
 
 
 def build_evaluator(cfg, dataset_name, output_folder=None):
@@ -99,41 +90,6 @@ class Trainer(DefaultTrainer):
     are working on a new research project. In that case you can write your
     own training loop. You can use "tools/plain_train_net.py" as an example.
     """
-
-    def __init__(self, cfg):
-        """
-        Args:
-            cfg (CfgNode):
-        """
-        TrainerBase.__init__(self)
-        logger = logging.getLogger("detectron2")
-        # setup_logger is not called for d2
-        if not logger.isEnabledFor(logging.INFO):
-            setup_logger()
-        cfg = DefaultTrainer.auto_scale_workers(cfg, comm.get_world_size())
-
-        # Assume these objects must be constructed in this order.
-        model = self.build_model(cfg)
-        optimizer = self.build_optimizer(cfg, model)
-        data_loader = self.build_train_loader(cfg)
-
-        model = create_ddp_model(model, broadcast_buffers=False)
-        self._trainer = (AMPTrainer if cfg.SOLVER.AMP.ENABLED else SimpleTrainer)(
-            model, data_loader, optimizer
-        )
-
-        self.scheduler = self.build_lr_scheduler(cfg, optimizer)
-        self.checkpointer = DistillerCheckpointer(
-            # Assume you want to save checkpoints together with logs/statistics
-            model,
-            cfg.OUTPUT_DIR,
-            trainer=weakref.proxy(self),
-        )
-        self.start_iter = 0
-        self.max_iter = cfg.SOLVER.MAX_ITER
-        self.cfg = cfg
-
-        self.register_hooks(self.build_hooks())
 
     @classmethod
     def build_model(cls, cfg):

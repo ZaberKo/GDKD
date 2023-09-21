@@ -20,8 +20,9 @@ import detectron2.utils.comm as comm
 
 from detectron2.engine import default_argument_parser, default_setup, hooks, launch
 from detectron2.evaluation import verify_results
+from detectron2.checkpoint import DetectionCheckpointer
 
-from trainer import DistillerCheckpointer, Trainer
+from trainer import Trainer
 from config import get_distiller_config
 
 import os
@@ -54,7 +55,7 @@ def main(args):
 
     if args.eval_only:
         model = Trainer.build_model(cfg)
-        DistillerCheckpointer(model, save_dir=cfg.OUTPUT_DIR).resume_or_load(
+        DetectionCheckpointer(model, save_dir=cfg.OUTPUT_DIR).resume_or_load(
             cfg.MODEL.WEIGHTS, resume=args.resume
         )
         res = Trainer.test(cfg, model)
