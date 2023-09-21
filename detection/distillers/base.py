@@ -107,6 +107,11 @@ class RCNNKD(nn.Module):
     @property
     def vis_period(self):
         return self.student.vis_period
+    
+    def record_info(self, info_dict):
+        storage=get_event_storage()
+        for k,v in info_dict.items():
+            storage.put_scalar(k, v)
 
     def forward(self, batched_inputs: Tuple[Dict[str, torch.Tensor]]):
         """

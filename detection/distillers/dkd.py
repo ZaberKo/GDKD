@@ -68,7 +68,7 @@ class DKD(RCNNKD):
         t_predictions = self._forward_pure_roi_head(
             self.teacher.roi_heads, t_features, sampled_proposals)
 
-        losses["loss_dkd"] = rcnn_dkd_loss(
+        losses["loss_dkd"], info_dict = rcnn_dkd_loss(
             s_predictions,
             t_predictions,
             [x.gt_classes for x in sampled_proposals],
@@ -76,6 +76,8 @@ class DKD(RCNNKD):
             self.kd_args.DKD.BETA,
             self.kd_args.DKD.T
         )
+
+        self.record_info(info_dict)
 
         if self.vis_period > 0:
             storage = get_event_storage()
@@ -91,10 +93,10 @@ def rcnn_dkd_loss(s_predictions, t_predictions, gt_classes, alpha, beta, tempera
     s_logits, s_bbox_offsets = s_predictions
     t_logits, t_bbox_offsets = t_predictions
     gt_classes = torch.cat(tuple(gt_classes), 0).reshape(-1)
-    loss_dkd = dkd_loss(s_logits, t_logits, gt_classes,
+    loss_dkd, info_dict = dkd_loss(s_logits, t_logits, gt_classes,
                         alpha, beta, temperature)
 
-    return loss_dkd
+    return loss_dkd, info_dict
 
 
 
@@ -152,4 +154,11 @@ def dkd_loss(logits_student, logits_teacher, target, alpha, beta, temperature, m
     nckd_loss = kl_div(log_p2_student,
                        log_p2_teacher, temperature, kl_type=kl_type)
 
-    return alpha * tckd_loss + beta * nckd_loss
+    dkd_loss = alpha * tckd_loss + beta * nckd_loss
+
+    info = dict(
+        loss_tckd=tckd_loss,
+        loss_nckd=nckd_loss,
+    )
+
+    return dkd_loss, info

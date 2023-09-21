@@ -83,7 +83,7 @@ class ReviewGDKD(RCNNKD):
         t_predictions = self._forward_pure_roi_head(
             self.teacher.roi_heads, t_features, sampled_proposals)
 
-        losses["loss_gdkd"] = rcnn_gdkd_loss(
+        losses["loss_gdkd"], info_dict = rcnn_gdkd_loss(
             s_predictions,
             t_predictions,
             k=self.kd_args.GDKD.TOPK,
@@ -92,6 +92,8 @@ class ReviewGDKD(RCNNKD):
             w2=self.kd_args.GDKD.W2,
             temperature=self.kd_args.GDKD.T
         )
+
+        self.record_info(info_dict)
 
         s_features_flat = [s_features[f] for f in s_features]
         t_features_flat = [t_features[f] for f in t_features]

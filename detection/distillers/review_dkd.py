@@ -83,7 +83,7 @@ class ReviewDKD(RCNNKD):
         t_predictions = self._forward_pure_roi_head(
             self.teacher.roi_heads, t_features, sampled_proposals)
 
-        losses["loss_dkd"] = rcnn_dkd_loss(
+        losses["loss_dkd"], info_dict = rcnn_dkd_loss(
             s_predictions,
             t_predictions,
             [x.gt_classes for x in sampled_proposals],
@@ -91,6 +91,8 @@ class ReviewDKD(RCNNKD):
             self.kd_args.DKD.BETA,
             self.kd_args.DKD.T
         )
+
+        self.record_info(info_dict)
 
         s_features_flat = [s_features[f] for f in s_features]
         t_features_flat = [t_features[f] for f in t_features]

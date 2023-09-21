@@ -65,7 +65,7 @@ class GDKD(RCNNKD):
         t_predictions = self._forward_pure_roi_head(
             self.teacher.roi_heads, t_features, sampled_proposals)
 
-        losses["loss_gdkd"] = rcnn_gdkd_loss(
+        losses["loss_gdkd"], info_dict = rcnn_gdkd_loss(
             s_predictions,
             t_predictions,
             k=self.kd_args.GDKD.TOPK,
@@ -74,6 +74,8 @@ class GDKD(RCNNKD):
             w2=self.kd_args.GDKD.W2,
             temperature=self.kd_args.GDKD.T
         )
+
+        self.record_info(info_dict)
 
         if self.vis_period > 0:
             storage = get_event_storage()
@@ -89,10 +91,10 @@ def rcnn_gdkd_loss(s_predictions, t_predictions, k, w0, w1, w2, temperature):
     s_logits, s_bbox_offsets = s_predictions
     t_logits, t_bbox_offsets = t_predictions
 
-    loss_gdkd = gdkd_loss(s_logits, t_logits,
+    loss_gdkd, info_dict = gdkd_loss(s_logits, t_logits,
                           k, w0, w1, w2, temperature)
 
-    return loss_gdkd
+    return loss_gdkd, info_dict
 
 
 def get_masks(logits, k=5):
@@ -157,5 +159,13 @@ def gdkd_loss(logits_student, logits_teacher, k, w0, w1, w2, temperature, mask_m
 
     low_other_loss = kl_div(
         log_p2_student, log_p2_teacher, temperature, kl_type)
+    
+    gdkd_loss = w0 * high_loss + w1 * low_top_loss + w2 * low_other_loss
 
-    return w0 * high_loss + w1 * low_top_loss + w2 * low_other_loss
+    info = dict(
+        loss_high=high_loss,
+        loss_low_top=low_top_loss,
+        loss_low_other=low_other_loss,
+    )
+
+    return gdkd_loss, info
