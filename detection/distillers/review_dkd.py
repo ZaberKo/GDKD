@@ -89,7 +89,8 @@ class ReviewDKD(RCNNKD):
             [x.gt_classes for x in sampled_proposals],
             self.kd_args.DKD.ALPHA,
             self.kd_args.DKD.BETA,
-            self.kd_args.DKD.T
+            self.kd_args.DKD.T,
+            self.kd_args.DKD.DISTILL_TYPE,
         )
 
         self.record_info(info_dict)

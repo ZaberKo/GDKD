@@ -44,6 +44,7 @@ cfg.KD.DKD = CN()
 cfg.KD.DKD.ALPHA = 1.0
 cfg.KD.DKD.BETA = 0.25
 cfg.KD.DKD.T = 1.0
+cfg.KD.DKD.DISTILL_TYPE =  "all" # all or things
 
 cfg.KD.GDKD = CN()
 cfg.KD.GDKD.TOPK = 5
@@ -51,7 +52,8 @@ cfg.KD.GDKD.W0 = 1.0
 cfg.KD.GDKD.W1 = 0.125
 cfg.KD.GDKD.W2 = 0.25
 cfg.KD.GDKD.T = 1.0
-
+cfg.KD.GDKD.DISTILL_TYPE = "all"
+cfg.KD.GDKD.WARMUP = 36000 # unit: iters
 
 def get_distiller_config():
     return cfg.clone()

@@ -44,13 +44,15 @@
                 // "configs/DKD/DKD-R50-R101.yaml",
                 // "configs/ReviewKD/ReviewKD-MV2-R50.yaml",
                 // "configs/ReviewKD/ReviewKD-R18-R101.yaml",
-                // "configs/GDKD/GDKD-R18-R101.yaml",
-                "configs/GDKD/ReviewGDKD-R18-R101.yaml",
+                "configs/GDKD/GDKD-R18-R101.yaml",
+                // "configs/GDKD/ReviewGDKD-R18-R101.yaml",
                 "--num-gpus",
                 "1",                
                 "--debug",
                 "SOLVER.IMS_PER_BATCH",
-                "2",
+                "4",
+                "KD.DKD.DISTILL_TYPE",
+                "things"
             ],
             "env": {
                 // "WANDB_MODE": "offline",

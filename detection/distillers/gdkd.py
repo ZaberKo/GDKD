@@ -68,11 +68,13 @@ class GDKD(RCNNKD):
         losses["loss_gdkd"], info_dict = rcnn_gdkd_loss(
             s_predictions,
             t_predictions,
+            [x.gt_classes for x in sampled_proposals],
             k=self.kd_args.GDKD.TOPK,
             w0=self.kd_args.GDKD.W0,
             w1=self.kd_args.GDKD.W1,
             w2=self.kd_args.GDKD.W2,
-            temperature=self.kd_args.GDKD.T
+            temperature=self.kd_args.GDKD.T,
+            distill_type=self.kd_args.GDKD.DISTILL_TYPE
         )
 
         self.record_info(info_dict)
@@ -87,12 +89,30 @@ class GDKD(RCNNKD):
         return losses
 
 
-def rcnn_gdkd_loss(s_predictions, t_predictions, k, w0, w1, w2, temperature):
+def rcnn_gdkd_loss(s_predictions, t_predictions, gt_classes, k, w0, w1, w2, temperature, distill_type):
     s_logits, s_bbox_offsets = s_predictions
     t_logits, t_bbox_offsets = t_predictions
+    gt_classes = torch.cat(tuple(gt_classes), 0).reshape(-1)
+
+    num_classes = s_logits.shape[1]
+    batch_size = gt_classes.shape[0]
+
+    if distill_type == "things":
+        # ignore background
+        mask = gt_classes != num_classes-1
+        gt_classes = gt_classes[mask]
+        s_logits = s_logits[mask]
+        t_logits = t_logits[mask]
+
+        s_logits = s_logits[:, :-1]
+        t_logits = t_logits[:, :-1]
 
     loss_gdkd, info_dict = gdkd_loss(s_logits, t_logits,
-                          k, w0, w1, w2, temperature)
+                                     k, w0, w1, w2, temperature)
+
+    if distill_type == "things":
+        ratio = mask.sum().float() / batch_size
+        info_dict["distill_fg_ratio"] = ratio
 
     return loss_gdkd, info_dict
 
@@ -159,7 +179,7 @@ def gdkd_loss(logits_student, logits_teacher, k, w0, w1, w2, temperature, mask_m
 
     low_other_loss = kl_div(
         log_p2_student, log_p2_teacher, temperature, kl_type)
-    
+
     gdkd_loss = w0 * high_loss + w1 * low_top_loss + w2 * low_other_loss
 
     info = dict(

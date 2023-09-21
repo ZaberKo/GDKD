@@ -86,11 +86,13 @@ class ReviewGDKD(RCNNKD):
         losses["loss_gdkd"], info_dict = rcnn_gdkd_loss(
             s_predictions,
             t_predictions,
+            [x.gt_classes for x in sampled_proposals],
             k=self.kd_args.GDKD.TOPK,
             w0=self.kd_args.GDKD.W0,
             w1=self.kd_args.GDKD.W1,
             w2=self.kd_args.GDKD.W2,
-            temperature=self.kd_args.GDKD.T
+            temperature=self.kd_args.GDKD.T,
+            distill_type=self.kd_args.GDKD.DISTILL_TYPE
         )
 
         self.record_info(info_dict)

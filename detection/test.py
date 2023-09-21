@@ -29,3 +29,12 @@ for path in Path("pretrained_old").glob("*.pth"):
     new_ckpt = convert(path)
     torch.save(new_ckpt, root/path.name)
 # %%
+from detectron2.data import MetadataCatalog
+meta=MetadataCatalog.get("coco_2017_train")
+# %%
+meta.thing_classes
+# %%
+meta.thing_dataset_id_to_contiguous_id
+# %%
+meta.stuff_classes
+# %%

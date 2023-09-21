@@ -60,7 +60,6 @@ class DKD(RCNNKD):
         sampled_proposals, detector_losses = self.student.roi_heads(
             s_images, s_features, proposals, gt_instances)
 
-
         # use sampled proposals from student's RPN to perform logits-KD
         # TODO: avoid duplicate forward for student
         s_predictions = self._forward_pure_roi_head(
@@ -74,7 +73,8 @@ class DKD(RCNNKD):
             [x.gt_classes for x in sampled_proposals],
             self.kd_args.DKD.ALPHA,
             self.kd_args.DKD.BETA,
-            self.kd_args.DKD.T
+            self.kd_args.DKD.T,
+            self.kd_args.DKD.DISTILL_TYPE,
         )
 
         self.record_info(info_dict)
@@ -89,16 +89,35 @@ class DKD(RCNNKD):
         return losses
 
 
-def rcnn_dkd_loss(s_predictions, t_predictions, gt_classes, alpha, beta, temperature):
+def rcnn_dkd_loss(s_predictions, t_predictions, gt_classes, alpha, beta, temperature, distill_type):
     s_logits, s_bbox_offsets = s_predictions
     t_logits, t_bbox_offsets = t_predictions
     gt_classes = torch.cat(tuple(gt_classes), 0).reshape(-1)
+
+    num_classes = s_logits.shape[1]
+    batch_size = gt_classes.shape[0]
+
+    if distill_type == "things":
+        # ignore background
+        mask = gt_classes != num_classes-1
+
+        gt_classes = gt_classes[mask]
+        s_logits = s_logits[mask]
+        t_logits = t_logits[mask]
+
+        s_logits = s_logits[:, :-1]
+        t_logits = t_logits[:, :-1]
+
     loss_dkd, info_dict = dkd_loss(s_logits, t_logits, gt_classes,
-                        alpha, beta, temperature)
+                                   alpha, beta, temperature)
+
+    if distill_type == "things":
+        ratio = mask.sum().item() / batch_size
+        # TODO: multiply N/#fg or 1/#fg?
+        # loss_dkd = loss_dkd / num_fg
+        info_dict["distill_fg_ratio"] = ratio
 
     return loss_dkd, info_dict
-
-
 
 
 def _get_gt_mask(logits, target):
@@ -123,8 +142,6 @@ def cat_mask(t, mask1, mask2):
 def dkd_loss(logits_student, logits_teacher, target, alpha, beta, temperature, mask_magnitude=1000, kl_type="forward"):
     gt_mask = _get_gt_mask(logits_teacher, target)
     other_mask = _get_other_mask(logits_teacher, target)
-
-
 
     soft_logits_student = logits_student / temperature
     soft_logits_teacher = logits_teacher / temperature
