@@ -38,6 +38,7 @@ from tqdm import tqdm
 import numpy as np
 import torch
 from pathlib import Path
+import os
 
 from .dkddebug import DKDDebug
 
@@ -117,6 +118,7 @@ def main(args):
     cfg = setup(args)
 
     output_dir = Path("debug/calc_logits")
+    ckpt_dir = Path(args.ckpt_path)
 
     if not output_dir.exists():
         output_dir.mkdir(parents=True)
@@ -129,7 +131,7 @@ def main(args):
     # for i in range(0,180000, 9000):
     for i in range(3):
         id = 59999+60000*i
-        ckpt_path = f"output_final/DKD-R18-R101_temjbxn9/model_{id:07d}.pth"
+        ckpt_path = ckpt_dir/f"model_{id:07d}.pth"
         print(f"load: {ckpt_path}")
         checkpointer = DetectionCheckpointer(distiller, output_dir)
         checkpointer.resume_or_load(ckpt_path, resume=False)
@@ -140,8 +142,9 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--config-file", default="",
+    parser.add_argument("--config-file", default="debug/DKD-R18-R101.yaml",
                         metavar="FILE", help="path to config file")
+    parser.add_argument("--ckpt-path", required=True)
     parser.add_argument("--num-iter", type=int, default=1000,
                         help="max iteration to run")
 
