@@ -1,5 +1,6 @@
-#%%
+# %%
 
+from detectron2.data import MetadataCatalog
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -12,29 +13,46 @@ import torch.nn.functional as F
 
 from pathlib import Path
 
+import copy
+
 save_path = Path("./export_img")
 
-#%%
+# %%
+
+class_names = copy.deepcopy(MetadataCatalog.get("coco_2017_train").thing_classes)
+class_names.append("background")
+
+# %%
+
+
 def read(model):
-    logits_dict = np.load(f"calc_logits/{model}.npz")
+    logits_dict = np.load(f"calc_logits/num_iter_1000/{model}.npz")
 
     return logits_dict
 
-def plot_logits_multiclass(model, topk=5, T=1, plot_top1=True, use_log=False, interest_classes=[0]):
+
+def plot_logits_multiclass(model, topk=5, T=1, plot_top1=True, use_log=False, no_bg=False, interest_classes=[0]):
     interest_classes = list(set(interest_classes))
     interest_classes.sort()
     logits_dict = read(model)
 
-    H,W=9,10
+    H, W = 9, 10
+
+    if no_bg:
+        H-=1
 
     fig = plt.figure(figsize=(3*W, 3*H), dpi=300)
-
-
 
     for i, ci in enumerate(interest_classes, 1):
         c = f"class{ci}"
         logits = logits_dict[c]
         logits = torch.as_tensor(logits)
+
+        if no_bg:
+            logits = logits[:, :-1]
+
+            if i == 81:
+                continue
 
         if use_log:
             probs = F.log_softmax(logits/T, dim=1)
@@ -59,6 +77,7 @@ def plot_logits_multiclass(model, topk=5, T=1, plot_top1=True, use_log=False, in
         plt.subplot(H, W, i)
         plt.bar(np.arange(num_cls), probs_avg)
         plt.bar(np.arange(num_cls), probs_topk, label=label)
+        plt.bar([ci],[probs_avg[ci]], color="red")
         # plt.yscale("log")
         # plt.title(c)
 
@@ -66,12 +85,14 @@ def plot_logits_multiclass(model, topk=5, T=1, plot_top1=True, use_log=False, in
             plt.ylabel("Probability", fontsize=24)
             plt.legend(loc="upper right")
 
-        plt.xlabel(f"Class{i-1}", fontsize=24)
+        plt.xlabel(class_names[i-1], fontsize=24)
 
     fig.tight_layout()
     plt.savefig(
         save_path/f'coco_{model}_logits_T{T}{"" if plot_top1 else "_noplot_top1"}.pdf')
     plt.show()
+
+
 # %%
 plot_logits_multiclass(
     model="DKD-R18-R101-iter59999",
@@ -104,4 +125,12 @@ for i in range(59999, 180000, 60000):
         use_log=False,
         interest_classes=list(range(81))
     )
+# %%
+plot_logits_multiclass(
+    model="DKD-R18-R101-iter59999",
+    plot_top1=True,
+    use_log=False,
+    no_bg=True,
+    interest_classes=list(range(81))
+)
 # %%
