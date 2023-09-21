@@ -89,14 +89,14 @@ def calc_pred_logits(distiller, data_loader, num_iter):
                 correct_flags, = accuracy(t_logits, gt_classes)
 
                 for i in range(num_classes):
-                    logits_dict[i].append(t_logits[gt_classes == i])
-                    correct_dict[i].append(correct_flags[gt_classes == i])
+                    logits_dict[i].append(t_logits[gt_classes == i].cpu())
+                    correct_dict[i].append(correct_flags[gt_classes == i].to(dtype=torch.float32, device=torch.device("cpu")))
 
                 pbar.update()
             pbar.close()
 
     for i in range(num_classes):
-        correct_dict[i]=torch.cat(correct_dict[i]).to(dtype=torch.float32)
+        correct_dict[i]=torch.cat(correct_dict[i])
 
     for i in range(num_classes):
         acc = torch.mean(correct_dict[i])
@@ -118,20 +118,24 @@ def main(args):
 
     output_dir = Path("debug/calc_logits")
 
+    if not output_dir.exists():
+        output_dir.mkdir(parents=True)
+
     distiller: DKDDebug = Trainer.build_model(cfg)
 
 
     data_loader = build_detection_train_loader(cfg)
 
     # for i in range(0,180000, 9000):
-    for i in [179999]:
-        ckpt_path = f"output_final/DKD-R18-R101_temjbxn9/model_{i:07d}.pth"
+    for i in range(3):
+        id = 59999+60000*i
+        ckpt_path = f"output_final/DKD-R18-R101_temjbxn9/model_{id:07d}.pth"
         print(f"load: {ckpt_path}")
         checkpointer = DetectionCheckpointer(distiller, output_dir)
         checkpointer.resume_or_load(ckpt_path, resume=False)
         logits_dict = calc_pred_logits(distiller, data_loader, args.num_iter)
 
-        np.savez(output_dir/f"/DKD-R18-R101-iter{i}.npz", **logits_dict)
+        np.savez(output_dir/f"DKD-R18-R101-iter{i}.npz", **logits_dict)
 
 
 if __name__ == "__main__":

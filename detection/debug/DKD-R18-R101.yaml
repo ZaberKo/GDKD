@@ -1,5 +1,5 @@
 _BASE_: "../configs/Base-Distillation.yaml"
-OUTPUT_DIR: debug/DKD-R18-R101
+OUTPUT_DIR: debug/output/DKD-R18-R101
 
 EXPERIMENT:
   TAG: ["DKD", "R18", "R101"]
