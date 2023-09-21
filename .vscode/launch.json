@@ -20,6 +20,10 @@
                 // "configs/ReviewKD/ReviewKD-R18-R101.yaml",
                 // "configs/GDKD/GDKD-R18-R101.yaml",
                 "debug/DKD-R18-R101.yaml",
+                "--ckpt",
+                "output_test/DKD-R18-R101_temjbxn9",
+                "--img-bs",
+                "7"
             ],
             "env": {
                 // "WANDB_MODE": "offline",

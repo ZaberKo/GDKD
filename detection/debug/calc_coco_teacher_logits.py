@@ -51,6 +51,8 @@ def setup(args):
     cfg.merge_from_file(args.config_file)
     # cfg.merge_from_list(args.opts)
 
+    if args.img_bs is not None:
+        cfg.SOLVER.IMS_PER_BATCH = args.img_bs
     cfg.freeze()
     default_setup(cfg, args)
     return cfg
@@ -146,6 +148,7 @@ if __name__ == "__main__":
     parser.add_argument("--ckpt", required=True)
     parser.add_argument("--num-iter", type=int, default=1000,
                         help="max iteration to run")
+    parser.add_argument("--img-bs", type=int)
 
     args = parser.parse_args()
 
