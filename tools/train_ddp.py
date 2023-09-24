@@ -151,6 +151,7 @@ if __name__ == "__main__":
                         help="identifier for training instance")
     parser.add_argument("--suffix", type=str, default="")
     parser.add_argument("--resume", action="store_true")
+    parser.add_argument("--seed", type=int)
     parser.add_argument("--data_workers", type=int, default=None)
     # parser.add_argument("--local_rank", type=int, default=0)
     # parser.add_argument("--world_size", type=int, default=1)
