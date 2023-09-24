@@ -5,8 +5,8 @@ from mdistiller.engine.cfg import CFG as cfg
 from mdistiller.engine.utils import (
     load_checkpoint, log_msg, AverageMeter, accuracy)
 from mdistiller.models import (
-    cifar_model_dict, 
-    cifar_aug_model_dict,
+    cifar100_model_dict, 
+    cifar100_aug_model_weights_dict,
     imagenet_model_dict
 )
 
@@ -100,9 +100,9 @@ def main(cfg, use_val_transform=False):
             pretrained=True)
     else:
         if cfg.DATASET.ENHANCE_AUGMENT:
-            net, pretrain_model_path = cifar_aug_model_dict[teacher_model]
+            net, pretrain_model_path = cifar100_aug_model_weights_dict[teacher_model]
         else:
-            net, pretrain_model_path = cifar_model_dict[teacher_model]
+            net, pretrain_model_path = cifar100_model_dict[teacher_model]
         assert (
             pretrain_model_path is not None
         ), "no pretrain model for teacher {}".format(teacher_model)

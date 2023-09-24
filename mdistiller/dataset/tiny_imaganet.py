@@ -1,23 +1,20 @@
 import os
 import numpy as np
 import torch
-from torchvision.datasets import ImageNet as _ImageNet
+from torchvision.datasets import ImageFolder
 import torchvision.transforms as transforms
-
-from torch.utils.data.distributed import DistributedSampler
-from .sampler import DistributedEvalSampler
+from torch.utils.data import DistributedSampler, DataLoader
 
 data_folder = os.path.join(os.path.dirname(
-    os.path.abspath(__file__)), '../../data/imagenet')
+    os.path.abspath(__file__)), '../../data/tiny-imagenet-200')
 
 
-class ImageNet(_ImageNet):
+class TinyImageNet(ImageFolder):
     def __getitem__(self, index):
         img, target = super().__getitem__(index)
         return img, target, index
-
-
-class ImageNetInstanceSample(ImageNet):
+    
+class TinyImageNetInstanceSample(TinyImageNet):
     """: Folder datasets which returns (img, label, index, contrast_index):
     """
 
@@ -72,87 +69,91 @@ class ImageNetInstanceSample(ImageNet):
         else:
             return img, target, index
 
-
-def get_imagenet_train_transform():
+def get_tiny_imagenet_train_transform():
     train_transform = transforms.Compose(
         [
             transforms.RandomResizedCrop(224),
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[
-                                 0.229, 0.224, 0.225])
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ]
     )
     return train_transform
 
 
-def get_imagenet_test_transform():
+def get_tiny_imagenet_test_transform():
     test_transform = transforms.Compose(
         [
             transforms.Resize(256),
             transforms.CenterCrop(224),
             transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[
-                                 0.229, 0.224, 0.225])
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ]
     )
     return test_transform
 
+def get_tiny_imagenet_dataloaders(batch_size, val_batch_size, num_workers, is_distributed=False):
+    train_transform = get_tiny_imagenet_train_transform()
 
-def get_imagenet_dataloaders(batch_size, val_batch_size, num_workers, is_distributed=False):
-    train_transform = get_imagenet_train_transform()
     train_folder = os.path.join(data_folder, 'train')
-    train_set = ImageNet(train_folder, transform=train_transform)
+    train_set = TinyImageNet(train_folder, transform=train_transform)
     num_data = len(train_set)
+
     if is_distributed:
         train_sampler = DistributedSampler(train_set)
     else:
         train_sampler = None
-    train_loader = torch.utils.data.DataLoader(
-        train_set,
-        batch_size=batch_size,
-        shuffle=not is_distributed,
+
+
+    train_loader = DataLoader(
+        train_set, 
+        batch_size=batch_size, 
+        shuffle=not is_distributed, 
         num_workers=num_workers,
         pin_memory=True,
         sampler=train_sampler
     )
-    test_loader = get_imagenet_val_loader(
-        val_batch_size, num_workers, is_distributed)
+
+    test_loader = get_imagenet_val_loader(val_batch_size, num_workers, is_distributed)
     return train_loader, test_loader, num_data
 
 
-def get_imagenet_dataloaders_sample(batch_size, val_batch_size, num_workers=16, k=4096, is_distributed=False):
-    train_transform = get_imagenet_train_transform()
+
+def get_tiny_imagenet_dataloaders_sample(
+    batch_size, val_batch_size, num_workers=16, k=4096, is_distributed=False
+):
+
+    train_transform = get_tiny_imagenet_train_transform()
     train_folder = os.path.join(data_folder, 'train')
-    train_set = ImageNetInstanceSample(
+    train_set = TinyImageNetInstanceSample(
         train_folder, transform=train_transform, is_sample=True, k=k)
     num_data = len(train_set)
+
     if is_distributed:
         train_sampler = DistributedSampler(train_set)
     else:
         train_sampler = None
 
-    train_loader = torch.utils.data.DataLoader(
-        train_set,
-        batch_size=batch_size,
-        shuffle=not is_distributed,
+
+    train_loader = DataLoader(
+        train_set, 
+        batch_size=batch_size, 
+        shuffle=not is_distributed, 
         num_workers=num_workers,
         pin_memory=True,
         sampler=train_sampler
     )
-    test_loader = get_imagenet_val_loader(
-        val_batch_size, num_workers, is_distributed)
+
+    test_loader = get_imagenet_val_loader(val_batch_size, num_workers, is_distributed)
     return train_loader, test_loader, num_data
 
-
 def get_imagenet_val_loader(val_batch_size, num_workers=16, is_distributed=False):
-    test_transform = get_imagenet_test_transform()
+    test_transform = get_tiny_imagenet_test_transform()
     test_folder = os.path.join(data_folder, 'val')
-    test_set = _ImageNet(test_folder, transform=test_transform)
+    test_set = ImageFolder(test_folder, transform=test_transform)
     if is_distributed:
-        # Note: use with caution: test_set must be divisible by #gpu
-        # test_sampler = DistributedSampler(test_set, shuffle=False, drop_last=True)
-        test_sampler = DistributedEvalSampler(test_set, shuffle=False)
+        # TODO: use EvalDistributedSampler
+        test_sampler = DistributedSampler(test_set, shuffle=False,)
     else:
         test_sampler = None
 

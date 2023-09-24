@@ -254,3 +254,8 @@ def resnet152(pretrained=False, model_dir=None, **kwargs):
         model.load_state_dict(model_zoo.load_url(
             model_urls["resnet152"], model_dir))
     return model
+
+
+
+def get_default_model_weights(name, model_dir):
+    return model_zoo.load_url(model_urls[name], model_dir)

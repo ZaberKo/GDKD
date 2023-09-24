@@ -17,12 +17,13 @@ from .mobilenetv2 import mobile_half
 from .ShuffleNetv1 import ShuffleV1
 from .ShuffleNetv2 import ShuffleV2
 
+from mdistiller.engine.utils import load_checkpoint
 
 cifar100_model_prefix = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
     "../../../download_ckpts/cifar_teachers/"
 )
-cifar_model_dict = {
+cifar100_model_dict = {
     # teachers
     "resnet56": (
         resnet56,
@@ -69,30 +70,30 @@ cifar_model_dict = {
 }
 
 
-cifar_aug_model_dict = {
+cifar100_aug_model_weights_dict = {
     # teachers
-    "resnet56": (
-        resnet56,
-        cifar100_model_prefix + "resnet56_aug/ckpt_epoch_240.pth",
-    ),
-    "resnet110": (
-        resnet110,
-        cifar100_model_prefix + "resnet110_aug/ckpt_epoch_240.pth",
-    ),
-    "resnet32x4": (
-        resnet32x4,
-        cifar100_model_prefix + "resnet32x4_aug/ckpt_epoch_240.pth",
-    ),
-    "ResNet50": (
-        ResNet50,
-        cifar100_model_prefix + "ResNet50_aug/ckpt_epoch_240.pth",
-    ),
-    "wrn_40_2": (
-        wrn_40_2,
-        cifar100_model_prefix + "wrn_40_2_aug/ckpt_epoch_240.pth",
-    ),
-    "vgg13": (
-        vgg13_bn,
-        cifar100_model_prefix + "vgg13_aug/ckpt_epoch_240.pth"
-    ),
+    "resnet56": cifar100_model_prefix + "resnet56_aug/ckpt_epoch_240.pth", 
+    "resnet110": cifar100_model_prefix + "resnet110_aug/ckpt_epoch_240.pth",
+    "resnet32x4": cifar100_model_prefix + "resnet32x4_aug/ckpt_epoch_240.pth",
+    "ResNet50": cifar100_model_prefix + "ResNet50_aug/ckpt_epoch_240.pth",
+    "wrn_40_2": cifar100_model_prefix + "wrn_40_2_aug/ckpt_epoch_240.pth",
+    "vgg13": cifar100_model_prefix + "vgg13_aug/ckpt_epoch_240.pth"
 }
+
+def get_cifar100_model(name, pretrained=False, aug=True):
+    gen_model, pretrained_model_path = cifar100_model_dict[name]
+    model = gen_model(num_classes=100)
+
+    if pretrained:
+        # teacher
+        if aug:
+            pretrained_model_path = cifar100_aug_model_weights_dict[name]
+
+        assert (
+            pretrained_model_path is not None
+        ), "no pretrain model for teacher {}".format(name)
+
+        
+        model.load_state_dict(load_checkpoint(pretrained_model_path)["model"])
+    
+    return model

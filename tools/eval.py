@@ -2,15 +2,20 @@ import argparse
 import torch
 import torch.backends.cudnn as cudnn
 
+from mdistiller.engine import validate
+
 cudnn.benchmark = True
 
 from mdistiller.distillers import Vanilla
-from mdistiller.models import cifar_model_dict, imagenet_model_dict
+from mdistiller.models import get_model
 from mdistiller.dataset import get_dataset
 from mdistiller.dataset.imagenet import get_imagenet_val_loader
-from mdistiller.engine.utils import load_checkpoint, validate
+from mdistiller.engine.utils import load_checkpoint
 from mdistiller.engine.cfg import CFG as cfg
 
+
+def get_val_dataloader(dataset, batch_size):
+    get_imagenet_val_loader(args.batch_size)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -21,26 +26,31 @@ if __name__ == "__main__":
         "--dataset",
         type=str,
         default="cifar100",
-        choices=["cifar100", "imagenet"],
+        choices=["cifar100", "cifar100_aug","imagenet"],
     )
     parser.add_argument("--batch_size", type=int, default=64)
     args = parser.parse_args()
 
-    cfg.DATASET.TYPE = args.dataset
+    if args.dataset == "cifar100_aug":
+        cfg.DATASET.ENHANCE_AUGMENT = True
+        cfg.DATASET.TYPE = "cifar100"
+    else:
+        cfg.DATASET.TYPE = args.dataset
     cfg.DATASET.TEST.BATCH_SIZE = args.batch_size
-    if args.dataset == "imagenet":
-        val_loader = get_imagenet_val_loader(args.batch_size)
-        if args.ckpt == "pretrain":
-            model = imagenet_model_dict[args.model](pretrained=True)
-        else:
-            model = imagenet_model_dict[args.model](pretrained=False)
-            model.load_state_dict(load_checkpoint(args.ckpt)["model"])
-    elif args.dataset == "cifar100":
-        train_loader, val_loader, num_data, num_classes = get_dataset(cfg)
-        model, pretrain_model_path = cifar_model_dict[args.model]
-        model = model(num_classes=num_classes)
-        ckpt = pretrain_model_path if args.ckpt == "pretrain" else args.ckpt
-        model.load_state_dict(load_checkpoint(ckpt)["model"])
+    cfg.DISTILLER.TYPE = "NONE"
+
+
+
+    cfg.freeze()
+
+    if args.ckpt == "pretrain":
+        model = get_model(cfg, args.model, pretrained=True)
+    else:
+        model = get_model(cfg, args.model, pretrained=False)
+        model.load_state_dict(load_checkpoint(args.ckpt))
+
+    train_loader, val_loader, num_data, num_classes = get_dataset(cfg)
+
     model = Vanilla(model)
     model = model.cuda()
     model = torch.nn.DataParallel(model)

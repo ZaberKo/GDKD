@@ -4,7 +4,7 @@ from mdistiller.engine.cfg import CFG as cfg
 from mdistiller.engine.utils import load_checkpoint, log_msg
 # from mdistiller.dataset import get_dataset
 from mdistiller.distillers import distiller_dict
-from mdistiller.models import cifar_model_dict, imagenet_model_dict
+from mdistiller.models import cifar100_model_dict, imagenet_model_dict
 import os
 import argparse
 import torch
@@ -36,14 +36,14 @@ def main(cfg):
         model_student = imagenet_model_dict[cfg.DISTILLER.STUDENT](
             pretrained=False)
     else:
-        net, pretrain_model_path = cifar_model_dict[cfg.DISTILLER.TEACHER]
+        net, pretrain_model_path = cifar100_model_dict[cfg.DISTILLER.TEACHER]
         assert (
             pretrain_model_path is not None
         ), "no pretrain model for teacher {}".format(cfg.DISTILLER.TEACHER)
         model_teacher = net(num_classes=num_classes)
         model_teacher.load_state_dict(
             load_checkpoint(pretrain_model_path)["model"])
-        model_student = cifar_model_dict[cfg.DISTILLER.STUDENT][0](
+        model_student = cifar100_model_dict[cfg.DISTILLER.STUDENT][0](
             num_classes=num_classes
         )
 

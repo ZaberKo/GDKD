@@ -1,31 +1,29 @@
-from mdistiller.engine import trainer_dict
-from mdistiller.engine.cfg import show_cfg, dump_cfg
-from mdistiller.engine.cfg import CFG as cfg
-from mdistiller.engine.utils import load_checkpoint, log_msg
-from mdistiller.dataset import get_dataset
-from mdistiller.distillers import distiller_dict
-from mdistiller.models import cifar_model_dict, imagenet_model_dict
-import os
+
 import argparse
-import torch
-import torch.nn as nn
-import torch.backends.cudnn as cudnn
+import os
+import random
 from datetime import datetime
 
+import numpy as np
+import torch
+import torch.backends.cudnn as cudnn
 import torch.distributed as dist
-from torch.nn.parallel import DistributedDataParallel as DDP
+import torch.nn as nn
 from torch.distributed.elastic.multiprocessing.errors import record
+from torch.nn.parallel import DistributedDataParallel as DDP
+
+from mdistiller.dataset import get_dataset
+from mdistiller.distillers import get_distiller
+from mdistiller.engine import trainer_dict
+from mdistiller.engine.cfg import CFG as cfg
+from mdistiller.engine.cfg import dump_cfg, show_cfg
+from mdistiller.engine.utils import log_msg, is_main_process, local_print
 
 cudnn.benchmark = True
 
 
-def local_print(msg, local_rank):
-    if local_rank == 0:
-        print(msg)
-
-
 @record
-def main(cfg, resume, opts, group_flag=False, id="", local_rank=0):
+def main(cfg, resume, opts, group_flag=False, id=""):
     experiment_name = cfg.EXPERIMENT.NAME
     if experiment_name == "":
         experiment_name = cfg.EXPERIMENT.TAG
@@ -39,7 +37,7 @@ def main(cfg, resume, opts, group_flag=False, id="", local_rank=0):
     # experiment_name = f"{cfg.EXPERIMENT.PROJECT}/{experiment_name}"
     experiment_name = cfg.EXPERIMENT.PROJECT + "/" + experiment_name
 
-    if local_rank == 0:
+    if is_main_process():
         if cfg.LOG.WANDB:
             try:
                 import wandb
@@ -68,70 +66,31 @@ def main(cfg, resume, opts, group_flag=False, id="", local_rank=0):
     # os.environ["NCCL_P2P_LEVEL"] = "PXB"
 
     # init dist
-    dist.init_process_group(backend='nccl')
+    local_rank = dist.get_rank()
     torch.cuda.set_device(local_rank)
 
     # init dataloader & models
-    train_loader, val_loader, num_data, num_classes = get_dataset(
-        cfg, is_distributed=True)
+    train_loader, val_loader, num_data, num_classes = get_dataset(cfg)
 
-    # vanilla
-    if cfg.DISTILLER.TYPE == "NONE":
-        if cfg.DATASET.TYPE == "imagenet":
-            model_student = imagenet_model_dict[cfg.DISTILLER.STUDENT](
-                pretrained=False)
-        else:
-            model_student = cifar_model_dict[cfg.DISTILLER.STUDENT][0](
-                num_classes=num_classes
-            )
-        distiller = distiller_dict[cfg.DISTILLER.TYPE](model_student)
-    # distillation
-    else:
-        local_print(log_msg("Loading teacher model", "INFO"), local_rank)
-        if cfg.DATASET.TYPE == "imagenet":
-            model_teacher = imagenet_model_dict[cfg.DISTILLER.TEACHER](
-                pretrained=True)
-            model_student = imagenet_model_dict[cfg.DISTILLER.STUDENT](
-                pretrained=False)
-        else:
-            net, pretrain_model_path = cifar_model_dict[cfg.DISTILLER.TEACHER]
-            assert (
-                pretrain_model_path is not None
-            ), "no pretrain model for teacher {}".format(cfg.DISTILLER.TEACHER)
-            model_teacher = net(num_classes=num_classes)
-            model_teacher.load_state_dict(
-                load_checkpoint(pretrain_model_path)["model"])
-            model_student = cifar_model_dict[cfg.DISTILLER.STUDENT][0](
-                num_classes=num_classes
-            )
-        if cfg.DISTILLER.TYPE == "CRD":
-            distiller = distiller_dict[cfg.DISTILLER.TYPE](
-                model_student, model_teacher, cfg, num_data
-            )
-        else:
-            distiller = distiller_dict[cfg.DISTILLER.TYPE](
-                model_student, model_teacher, cfg
-            )
+    distiller = get_distiller(cfg, num_data)
 
-    # distiller = torch.nn.DataParallel(distiller.cuda())
+    if cfg.DISTILLER.TYPE != "NONE":
+        local_print(
+            log_msg(
+                "Extra parameters of {}: {}\033[0m".format(
+                    cfg.DISTILLER.TYPE, distiller.get_extra_parameters()
+                ),
+                "INFO",
+            ))
+
     distiller = nn.SyncBatchNorm.convert_sync_batchnorm(distiller)
     distiller = distiller.cuda()
     distiller = DDP(
         distiller,
         device_ids=[local_rank],
         find_unused_parameters=True,
-        static_graph = True
+        static_graph=True
     )
-
-    if cfg.DISTILLER.TYPE != "NONE":
-        local_print(
-            log_msg(
-                "Extra parameters of {}: {}\033[0m".format(
-                    cfg.DISTILLER.TYPE, distiller.module.get_extra_parameters()
-                ),
-                "INFO",
-            ), local_rank
-        )
 
     # training
     if group_flag:
@@ -141,9 +100,44 @@ def main(cfg, resume, opts, group_flag=False, id="", local_rank=0):
             datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
 
     trainer = trainer_dict[cfg.SOLVER.TRAINER](
-        experiment_name, distiller, train_loader, val_loader, cfg, is_distributed=True, local_rank=local_rank
+        experiment_name, distiller, train_loader, val_loader, cfg
     )
     trainer.train(resume=resume)
+
+
+def setup_cfg(args):
+    cfg.merge_from_file(args.cfg)
+    cfg.merge_from_list(args.opts)
+
+    if cfg.DATASET.ENHANCE_AUGMENT:
+        cfg.EXPERIMENT.TAG += ",aug"
+
+    if args.suffix != "":
+        cfg.EXPERIMENT.TAG += ","+args.suffix
+
+    if args.data_workers is not None:
+        cfg.DATASET.NUM_WORKERS = int(args.data_workers)
+
+    local_print(f"resize batch_size {cfg.SOLVER.BATCH_SIZE} to {cfg.SOLVER.BATCH_SIZE // world_size}")
+    cfg.SOLVER.BATCH_SIZE = cfg.SOLVER.BATCH_SIZE // world_size
+
+    local_print(
+        f"resize test batch_size {cfg.DATASET.TEST.BATCH_SIZE} to {cfg.DATASET.TEST.BATCH_SIZE // world_size}")
+    cfg.DATASET.TEST.BATCH_SIZE = cfg.DATASET.TEST.BATCH_SIZE // world_size
+
+    local_print(
+        f"resize num_workers {cfg.DATASET.NUM_WORKERS} to {cfg.DATASET.NUM_WORKERS // world_size}")
+    cfg.DATASET.NUM_WORKERS = cfg.DATASET.NUM_WORKERS // world_size
+
+    if args.seed is not None:
+        seed = args.seed + dist.get_rank()
+        torch.manual_seed(seed)
+        torch.cuda.manual_seed(seed)
+        np.random.seed(seed)
+        random.seed(seed)
+        cfg.EXPERIMENT.TAG += ",seed_"+str(seed)
+
+    cfg.freeze()
 
 
 # for training with original python reqs
@@ -155,7 +149,6 @@ if __name__ == "__main__":
     parser.add_argument("--group", action="store_true")
     parser.add_argument("--id", type=str, default="",
                         help="identifier for training instance")
-    parser.add_argument("--record_loss", action="store_true")
     parser.add_argument("--suffix", type=str, default="")
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--data_workers", type=int, default=None)
@@ -164,36 +157,12 @@ if __name__ == "__main__":
     parser.add_argument("opts", nargs="*")
 
     args = parser.parse_args()
-    cfg.merge_from_file(args.cfg)
-    cfg.merge_from_list(args.opts)
 
-    if args.suffix != "":
-        cfg.EXPERIMENT.TAG += ","+args.suffix
+    dist.init_process_group(backend='nccl')
+    local_rank = dist.get_rank()
+    world_size = dist.get_world_size()
+    local_print(f"start local_rank: {local_rank}, world_size: {world_size}")
 
-    if args.record_loss:
-        if cfg.DISTILLER.TYPE == "CRD":
-            raise ValueError("CRD currently does not support record loss")
-        cfg.SOLVER.TRAINER = "custom"
+    setup_cfg(args)
 
-    local_rank = int(os.environ["LOCAL_RANK"])
-    world_size = int(os.environ["WORLD_SIZE"])
-
-    local_print(
-        f"start local_rank: {local_rank}, world_size: {world_size}", local_rank)
-    local_print(
-        f"resize batch_size {cfg.SOLVER.BATCH_SIZE} to {cfg.SOLVER.BATCH_SIZE // world_size}", local_rank)
-    cfg.SOLVER.BATCH_SIZE = cfg.SOLVER.BATCH_SIZE // world_size
-    local_print(
-        f"resize test batch_size {cfg.DATASET.TEST.BATCH_SIZE} to {cfg.DATASET.TEST.BATCH_SIZE // world_size}", local_rank)
-    cfg.DATASET.TEST.BATCH_SIZE = cfg.DATASET.TEST.BATCH_SIZE // world_size
-
-    if args.data_workers is not None:
-        cfg.DATASET.NUM_WORKERS = int(args.data_workers)
-
-    local_print(
-        f"resize num_workers {cfg.DATASET.NUM_WORKERS} to {cfg.DATASET.NUM_WORKERS // world_size}", local_rank)
-    cfg.DATASET.NUM_WORKERS = cfg.DATASET.NUM_WORKERS // world_size
-
-    cfg.freeze()
-    main(cfg, args.resume, args.opts, group_flag=args.group,
-         id=args.id, local_rank=local_rank)
+    main(cfg, args.resume, args.opts, group_flag=args.group, id=args.id)

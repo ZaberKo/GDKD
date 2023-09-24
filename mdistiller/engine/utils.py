@@ -1,14 +1,12 @@
 import os
-import torch
-import torch.nn as nn
-import numpy as np
 import sys
 import time
-from tqdm import tqdm
+import numpy as np
 
+import torch
 import torch.distributed as dist
 
-class AverageMeter(object):
+class AverageMeter():
     """Computes and stores the average and current value"""
 
     def __init__(self):
@@ -25,45 +23,33 @@ class AverageMeter(object):
         self.sum += val * n
         self.count += n
         self.avg = self.sum / self.count
+        return self
+
+    def all_reduce(self):
+        if not is_distributed():
+            return
+
+        if torch.cuda.is_available():
+            device = torch.device("cuda")
+        else:
+            device = torch.device("cpu")
+        total = torch.tensor([self.sum, self.count], dtype=torch.float32, device=device)
+        dist.all_reduce(total, dist.ReduceOp.SUM, async_op=False)
+        self.sum, self.count = total.tolist()
+        self.avg = self.sum / self.count
 
 
-def validate(val_loader, distiller):
-    batch_time, losses, top1, top5 = [AverageMeter() for _ in range(4)]
-    criterion = nn.CrossEntropyLoss()
-    num_iter = len(val_loader)
-    pbar = tqdm(range(num_iter))
+class Timer():
+    def __enter__(self):
+        self._start = time.perf_counter()
+        return self
+    
+    def __exit__(self, *args):
+        self._stop = time.perf_counter()
 
-    distiller.eval()
-    with torch.no_grad():
-        start_time = time.time()
-        for idx, (image, target) in enumerate(val_loader):
-            image = image.float()
-            image = image.cuda(non_blocking=True)
-            target = target.cuda(non_blocking=True)
-            output = distiller(image=image)
-            loss = criterion(output, target)
-            acc1, acc5 = accuracy(output, target, topk=(1, 5))
-            batch_size = image.size(0)
-
-            loss = reduce_tensor(loss.detach())
-            acc1 = reduce_tensor(acc1)
-            acc5 = reduce_tensor(acc5)
-
-            losses.update(loss.cpu().numpy().mean(), batch_size)
-            top1.update(acc1.item(), batch_size)
-            top5.update(acc5.item(), batch_size)
-
-            # measure elapsed time
-            batch_time.update(time.time() - start_time)
-            start_time = time.time()
-            msg = "Top-1:{top1.avg:.3f}| Top-5:{top5.avg:.3f}".format(
-                top1=top1, top5=top5
-            )
-            pbar.set_description(log_msg(msg, "EVAL"))
-            pbar.update()
-    pbar.close()
-    return top1.avg, top5.avg, losses.avg
-
+    @property
+    def interval(self):
+        return self._stop - self._start
 
 def log_msg(msg, mode="INFO"):
     color_map = {
@@ -110,13 +96,29 @@ def load_checkpoint(path):
         return torch.load(f, map_location="cpu")
 
 def reduce_tensor(tensor, avg=True):
-    if not dist.is_initialized():
+    if not is_distributed():
         return tensor
     
     rt = tensor.clone()
-    torch.distributed.all_reduce(rt, op=torch.distributed.ReduceOp.SUM)
+    dist.all_reduce(rt, op=dist.ReduceOp.SUM)
     if avg:
         world_size = dist.get_world_size()
         rt /= world_size
 
     return rt
+
+def is_distributed():
+    return dist.is_available() and dist.is_initialized()
+
+def get_rank() -> int:
+    if not is_distributed():
+        return 0
+    return dist.get_rank()
+
+def is_main_process() -> bool:
+    return get_rank() == 0
+
+
+def local_print(msg):
+    if is_main_process():
+        print(msg)

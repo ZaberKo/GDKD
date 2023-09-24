@@ -5,6 +5,17 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Eval",
+            "type": "python",
+            "request": "launch",
+            "module": "tools.eval",
+            "justMyCode": true,
+            "args": [
+                "-m", "resnet32x4",
+                "-d", "cifar100",
+            ]
+        },
+        {
             "name": "Calc Detection Teacher logits",
             "type": "python",
             "request": "launch",
@@ -47,11 +58,11 @@
                 "configs/GDKD/GDKD-R18-R101.yaml",
                 // "configs/GDKD/ReviewGDKD-R18-R101.yaml",
                 "--num-gpus",
-                "1",                
+                "1",
                 "--debug",
                 "SOLVER.IMS_PER_BATCH",
                 "4",
-                "KD.DKD.DISTILL_TYPE",
+                "KD.GDKD.DISTILL_TYPE",
                 "things"
             ],
             "env": {
@@ -76,7 +87,7 @@
                 // "configs/GDKD/GDKD-R18-R101.yaml",
                 // "configs/GDKD/ReviewGDKD-R18-R101.yaml",
                 "--num-gpus",
-                "1",                
+                "1",
                 "--debug",
                 "SOLVER.IMS_PER_BATCH",
                 "2",
@@ -102,7 +113,7 @@
                 // "configs/ReviewKD/ReviewKD-R18-R101.yaml",
                 "--num-gpus",
                 "1",
-                "--eval-only",                
+                "--eval-only",
                 "OUTPUT_DIR",
                 "./output/debug",
                 "SOLVER.IMS_PER_BATCH",
@@ -264,6 +275,6 @@
                 "--aug",
                 "none"
             ]
-        }
+        },
     ]
 }

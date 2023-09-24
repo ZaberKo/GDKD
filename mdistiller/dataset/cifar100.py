@@ -141,6 +141,23 @@ def get_cifar100_train_transform_with_autoaugment():
 
     return train_transform
 
+def get_cifar100_train_transform_with_randomaugment():
+    from torchvision.transforms import RandAugment
+    
+    train_transform = transforms.Compose(
+        [
+            transforms.RandomCrop(32, padding=4),
+            transforms.RandomHorizontalFlip(),
+            RandAugment(2, 10),
+            transforms.ToTensor(),
+            Cutout(n_holes=1, length=16),
+            transforms.Normalize(
+                (0.5071, 0.4867, 0.4408), (0.2675, 0.2565, 0.2761)),
+        ]
+    )
+
+    return train_transform
+
 
 def get_cifar100_train_transform():
     train_transform = transforms.Compose(

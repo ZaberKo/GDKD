@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 
 class MobileNetV1(nn.Module):
-    def __init__(self, **kwargs):
+    def __init__(self, num_classes=1000, **kwargs):
         super(MobileNetV1, self).__init__()
 
         def conv_bn(inp, oup, stride):
@@ -41,7 +41,7 @@ class MobileNetV1(nn.Module):
             conv_dw(1024, 1024, 1),
             nn.AvgPool2d(7),
         )
-        self.fc = nn.Linear(1024, 1000)
+        self.fc = nn.Linear(1024, num_classes)
 
     def forward(self, x, is_feat=False):
         feat1 = self.model[3][:-1](self.model[0:3](x))

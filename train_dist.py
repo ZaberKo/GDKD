@@ -42,8 +42,7 @@ if __name__ == "__main__":
 
     cmds = ["python", "-m", "tools.train",
             "--cfg", args.cfg,
-            "--group", "--id", "",
-            "--record_loss"]
+            "--group", "--id", ""]
     if args.data_workers:
         cmds.append("--data_workers")
         cmds.append(str(args.data_workers))

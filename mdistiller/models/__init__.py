@@ -1,8 +1,8 @@
-from .cifar import cifar_model_dict, cifar_aug_model_dict
-from .imagenet import imagenet_model_dict
+from .cifar import get_cifar100_model
+from .imagenet import get_imagenet_model
+from .tiny_imagenet import get_tiny_imagenet_model
 
-
-model_tag_dict ={
+model_tag_dict = {
     "resnet32x4": "res32x4",
     "resnet8x4": "res8x4",
     "ShuffleV1": "shuv1",
@@ -22,3 +22,22 @@ model_tag_dict ={
     "wrn_16_2": "wrn_16_2",
     "wrn_40_1": "wrn_40_1",
 }
+
+
+def get_model(cfg, name, pretrained=False):
+    if cfg.DATASET.TYPE == "cifar100":
+        model = get_cifar100_model(name, pretrained=pretrained, aug=cfg.DATASET.ENHANCE_AUGMENT)
+    elif cfg.DATASET.TYPE == "imagenet":
+        model = get_imagenet_model(name, pretrained=pretrained)
+    elif cfg.DATASET.TYPE == "tiny-imagenet":
+        model = get_tiny_imagenet_model(name, pretrained=pretrained)
+    else:
+        raise NotImplementedError
+
+    return model
+
+
+
+        
+
+
