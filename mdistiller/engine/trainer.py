@@ -205,17 +205,17 @@ class Trainer():
         for key, info in train_info.items():
             if isinstance(info, torch.Tensor):
                 self.train_info_meters[key].update(
-                    info.tolist(), batch_size
+                    info.item(), batch_size
                 ).all_reduce()
 
         train_meters["losses"].update(
             loss.tolist(), batch_size).all_reduce()
-        train_meters["top1"].update(acc1.tolist(), batch_size).all_reduce()
-        train_meters["top5"].update(acc5.tolist(), batch_size).all_reduce()
+        train_meters["top1"].update(acc1.item(), batch_size).all_reduce()
+        train_meters["top5"].update(acc5.item(), batch_size).all_reduce()
 
         # record "loss_ce" & "loss_kd"
         for name, loss in losses_dict.items():
-            train_meters[name].update(loss.tolist(), batch_size).all_reduce()
+            train_meters[name].update(loss.item(), batch_size).all_reduce()
 
         # print info
         msg = "Epoch:{}| Time(data):{:.3f}| Time(train):{:.3f}| Loss:{:.4f}| Top-1:{:.3f}| Top-5:{:.3f}".format(

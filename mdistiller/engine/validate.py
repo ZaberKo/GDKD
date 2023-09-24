@@ -23,9 +23,9 @@ def validate(val_loader, distiller):
                 acc1, acc5 = accuracy(output, target, topk=(1, 5))
                 batch_size = image.size(0)
 
-                losses.update(loss.tolist(), batch_size).all_reduce()
-                top1.update(acc1.tolist(), batch_size).all_reduce()
-                top5.update(acc5.tolist(), batch_size).all_reduce()
+                losses.update(loss.item(), batch_size).all_reduce()
+                top1.update(acc1.item(), batch_size).all_reduce()
+                top5.update(acc5.item(), batch_size).all_reduce()
 
             # measure elapsed time
             eval_time.update(eval_timer.interval)
