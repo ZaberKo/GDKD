@@ -14,7 +14,7 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 
 from mdistiller.dataset import get_dataset
 from mdistiller.distillers import get_distiller
-from mdistiller.engine import trainer_dict
+from mdistiller.engine import Trainer
 from mdistiller.engine.cfg import CFG as cfg
 from mdistiller.engine.cfg import dump_cfg, show_cfg
 from mdistiller.engine.utils import log_msg, is_main_process, local_print
@@ -99,7 +99,7 @@ def main(cfg, resume, opts, group_flag=False, id=""):
         experiment_name = experiment_name+"_"+id+"_" + \
             datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
 
-    trainer = trainer_dict[cfg.SOLVER.TRAINER](
+    trainer = Trainer(
         experiment_name, distiller, train_loader, val_loader, cfg
     )
     trainer.train(resume=resume)
