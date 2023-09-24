@@ -28,6 +28,7 @@ class Trainer():
         self.train_loader = train_loader
         self.val_loader = val_loader
         self.optimizer = self.init_optimizer(cfg)
+        self.lr_scheduler = self.init_lr_scheduler(cfg, self.optimizer)
         self.best_acc = -1
         self.is_distributed = is_distributed()
 
@@ -55,6 +56,18 @@ class Trainer():
         else:
             raise NotImplementedError(cfg.SOLVER.TYPE)
         return optimizer
+    
+    def init_lr_scheduler(self, cfg, optimizer):
+        if cfg.SOLVER.LR_SCHEDULER == "cosine":
+            lr_scheduler = optim.lr_scheduler.CosineAnnealingLR(
+                optimizer, cfg.SOLVER.EPOCHS, eta_min=cfg.SOLVER.LR_MIN)
+        elif cfg.SOLVER.LR_SCHEDULER == "step":
+            lr_scheduler = optim.lr_scheduler.MultiStepLR(
+                optimizer, cfg.SOLVER.LR_DECAY_STAGES, cfg.SOLVER.LR_DECAY_RATE
+            )
+        else:
+            raise NotImplementedError(cfg.SOLVER.LR_SCHEDULER.TYPE)
+        return lr_scheduler
 
     def log(self, lr, epoch, log_dict):
         if is_main_process():
@@ -104,7 +117,7 @@ class Trainer():
                              "{:.2f}".format(float(self.best_acc)))
 
     def train_epoch(self, epoch):
-        lr = adjust_learning_rate(epoch, self.cfg, self.optimizer)
+        # lr = adjust_learning_rate(epoch, self.cfg, self.optimizer)
 
         self.train_info_meters = defaultdict(AverageMeter)
 
@@ -128,6 +141,10 @@ class Trainer():
         # validate
         test_acc, test_acc_top5, test_loss = validate(
             self.val_loader, self.distiller)
+        
+        lr = self.lr_scheduler.get_last_lr()[0]
+        self.lr_scheduler.step()
+
 
         # log
         if is_main_process():
