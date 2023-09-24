@@ -91,7 +91,7 @@ class Trainer():
                 lines = [
                     "-" * 25 + os.linesep,
                     "epoch: {}".format(epoch) + os.linesep,
-                    "lr: {:.2f}".format(float(lr)) + os.linesep,
+                    "lr: {:.8f}".format(float(lr)) + os.linesep,
                 ]
                 for k, v in log_dict.items():
                     lines.append("{}: {:.2f}".format(k, v) + os.linesep)
