@@ -16,7 +16,7 @@ imagenet_model_dict = {
     "ResNet34": (resnet34, imagenet_model_dir/"resnet34"),
     "ResNet50": (resnet50, imagenet_model_dir/"resnet50"),
     "ResNet101": (resnet101, imagenet_model_dir/"resnet101"),
-    "MobileNetV1": MobileNetV1, # use for student only
+    "MobileNetV1": (MobileNetV1, None) # use for student only
 }
 
 

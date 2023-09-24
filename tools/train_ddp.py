@@ -35,7 +35,7 @@ def main(cfg, resume, opts, group_flag=False, id=""):
         experiment_name += "|"+",".join(addtional_tags)
 
     # experiment_name = f"{cfg.EXPERIMENT.PROJECT}/{experiment_name}"
-    experiment_name = cfg.EXPERIMENT.PROJECT + "/" + experiment_name
+    # experiment_name = cfg.EXPERIMENT.PROJECT + "/" + experiment_name
 
     if is_main_process():
         if cfg.LOG.WANDB:
@@ -72,7 +72,7 @@ def main(cfg, resume, opts, group_flag=False, id=""):
     # init dataloader & models
     train_loader, val_loader, num_data, num_classes = get_dataset(cfg)
 
-    distiller = get_distiller(cfg, num_data)
+    distiller = get_distiller(cfg, num_data=num_data)
 
     if cfg.DISTILLER.TYPE != "NONE":
         local_print(
@@ -88,7 +88,7 @@ def main(cfg, resume, opts, group_flag=False, id=""):
     distiller = DDP(
         distiller,
         device_ids=[local_rank],
-        find_unused_parameters=True,
+        # find_unused_parameters=True,
         static_graph=True
     )
 
@@ -149,12 +149,10 @@ if __name__ == "__main__":
     parser.add_argument("--group", action="store_true")
     parser.add_argument("--id", type=str, default="",
                         help="identifier for training instance")
-    parser.add_argument("--suffix", type=str, default="")
+    parser.add_argument("--suffix", type=str, nargs="?", default="", const="")
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--seed", type=int)
     parser.add_argument("--data_workers", type=int, default=None)
-    # parser.add_argument("--local_rank", type=int, default=0)
-    # parser.add_argument("--world_size", type=int, default=1)
     parser.add_argument("opts", nargs="*")
 
     args = parser.parse_args()

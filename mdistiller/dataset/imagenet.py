@@ -101,8 +101,7 @@ def get_imagenet_test_transform():
 
 def get_imagenet_dataloaders(batch_size, val_batch_size, num_workers, is_distributed=False):
     train_transform = get_imagenet_train_transform()
-    train_folder = os.path.join(data_folder, 'train')
-    train_set = ImageNet(train_folder, transform=train_transform)
+    train_set = ImageNet(data_folder, split='train', transform=train_transform)
     num_data = len(train_set)
     if is_distributed:
         train_sampler = DistributedSampler(train_set)
@@ -123,9 +122,8 @@ def get_imagenet_dataloaders(batch_size, val_batch_size, num_workers, is_distrib
 
 def get_imagenet_dataloaders_sample(batch_size, val_batch_size, num_workers=16, k=4096, is_distributed=False):
     train_transform = get_imagenet_train_transform()
-    train_folder = os.path.join(data_folder, 'train')
     train_set = ImageNetInstanceSample(
-        train_folder, transform=train_transform, is_sample=True, k=k)
+        data_folder, split='train', transform=train_transform, is_sample=True, k=k)
     num_data = len(train_set)
     if is_distributed:
         train_sampler = DistributedSampler(train_set)
@@ -147,8 +145,7 @@ def get_imagenet_dataloaders_sample(batch_size, val_batch_size, num_workers=16, 
 
 def get_imagenet_val_loader(val_batch_size, num_workers=16, is_distributed=False):
     test_transform = get_imagenet_test_transform()
-    test_folder = os.path.join(data_folder, 'val')
-    test_set = _ImageNet(test_folder, transform=test_transform)
+    test_set = _ImageNet(data_folder, split='val', transform=test_transform)
     if is_distributed:
         # Note: use with caution: test_set must be divisible by #gpu
         # test_sampler = DistributedSampler(test_set, shuffle=False, drop_last=True)

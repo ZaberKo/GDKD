@@ -6,6 +6,7 @@ import numpy as np
 import torch
 import torch.distributed as dist
 
+
 class AverageMeter():
     """Computes and stores the average and current value"""
 
@@ -17,6 +18,8 @@ class AverageMeter():
         self.avg = 0
         self.sum = 0
         self.count = 0
+        self.global_sum = 0
+        self.global_count = 0
 
     def update(self, val, n=1):
         self.val = val
@@ -26,6 +29,9 @@ class AverageMeter():
         return self
 
     def all_reduce(self):
+        """
+            calculate the global average to self.avg
+        """
         if not is_distributed():
             return
 
@@ -33,23 +39,27 @@ class AverageMeter():
             device = torch.device("cuda")
         else:
             device = torch.device("cpu")
-        total = torch.tensor([self.sum, self.count], dtype=torch.float32, device=device)
+        total = torch.tensor([self.sum, self.count],
+                             dtype=torch.float32, device=device)
         dist.all_reduce(total, dist.ReduceOp.SUM, async_op=False)
-        self.sum, self.count = total.tolist()
-        self.avg = self.sum / self.count
+        self.global_sum, self.global_count = total.tolist()
+
+        self.avg = self.global_sum / self.global_count
+
 
 
 class Timer():
     def __enter__(self):
         self._start = time.perf_counter()
         return self
-    
+
     def __exit__(self, *args):
         self._stop = time.perf_counter()
 
     @property
     def interval(self):
         return self._stop - self._start
+
 
 def log_msg(msg, mode="INFO"):
     color_map = {
@@ -95,10 +105,11 @@ def load_checkpoint(path):
     with open(path, "rb") as f:
         return torch.load(f, map_location="cpu")
 
+
 def reduce_tensor(tensor, avg=True):
     if not is_distributed():
         return tensor
-    
+
     rt = tensor.clone()
     dist.all_reduce(rt, op=dist.ReduceOp.SUM)
     if avg:
@@ -107,13 +118,16 @@ def reduce_tensor(tensor, avg=True):
 
     return rt
 
+
 def is_distributed():
     return dist.is_available() and dist.is_initialized()
+
 
 def get_rank() -> int:
     if not is_distributed():
         return 0
     return dist.get_rank()
+
 
 def is_main_process() -> bool:
     return get_rank() == 0
