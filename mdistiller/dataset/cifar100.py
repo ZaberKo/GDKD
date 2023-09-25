@@ -2,6 +2,7 @@ import os
 import numpy as np
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
+from torchvision.transforms import AutoAugment, AutoAugmentPolicy
 from PIL import Image
 
 
@@ -120,18 +121,11 @@ class CIFAR100InstanceSample(datasets.CIFAR100):
 
 
 def get_cifar100_train_transform_with_autoaugment():
-    try:
-        from torchvision.transforms import AutoAugment, AutoAugmentPolicy
-        autoaugment = AutoAugment(AutoAugmentPolicy.CIFAR10, fill=128)
-    except ModuleNotFoundError:
-        from .autoaugment import CIFAR10Policy
-        autoaugment = CIFAR10Policy()
-
     train_transform = transforms.Compose(
         [
             transforms.RandomCrop(32, padding=4),
             transforms.RandomHorizontalFlip(),
-            autoaugment,
+            AutoAugment(AutoAugmentPolicy.CIFAR10, fill=128),
             transforms.ToTensor(),
             Cutout(n_holes=1, length=16),
             transforms.Normalize(

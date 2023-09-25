@@ -1,26 +1,55 @@
 import os
+import sys
 import numpy as np
 import torch
 from torchvision.datasets import ImageFolder
 import torchvision.transforms as transforms
 from torch.utils.data import DistributedSampler, DataLoader
 
+from mdistiller.engine.utils import log_msg
+
 data_folder = os.path.join(os.path.dirname(
     os.path.abspath(__file__)), '../../data/tiny-imagenet-200')
 
 
 class TinyImageNet(ImageFolder):
-    def __getitem__(self, index):
-        img, target = super().__getitem__(index)
+    def __init__(self, *args, on_memory=True, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.on_memory = on_memory
+
+        if self.on_memory:
+            self.init_cache()
+
+    def init_cache(self):
+        cached_samples = []
+        for path, target in self.samples:
+            img = self.loader(path)
+            cached_samples.append((img, target))
+
+        self.samples = cached_samples
+
+        print(log_msg(f"Finished loading TinyImageNet into memory", "INFO"))
+
+    def __getitem__(self, index: int):
+        if self.on_memory:
+            img, target = self.samples[index]
+        else:
+            path, target = self.samples[index]
+            img = self.loader(path)
+        if self.transform is not None:
+            img = self.transform(img)
+        if self.target_transform is not None:
+            target = self.target_transform(target)
+
         return img, target, index
-    
+
+
 class TinyImageNetInstanceSample(TinyImageNet):
     """: Folder datasets which returns (img, label, index, contrast_index):
     """
 
-    def __init__(self, folder, transform=None, target_transform=None,
-                 is_sample=False, k=4096):
-        super().__init__(folder, transform=transform)
+    def __init__(self, folder, on_memory=True, transform=None, is_sample=False, k=4096):
+        super().__init__(folder, on_memory=on_memory, transform=transform)
 
         self.k = k
         self.is_sample = is_sample
@@ -69,13 +98,15 @@ class TinyImageNetInstanceSample(TinyImageNet):
         else:
             return img, target, index
 
+
 def get_tiny_imagenet_train_transform():
     train_transform = transforms.Compose(
         [
             transforms.RandomResizedCrop(224),
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[
+                                 0.229, 0.224, 0.225])
         ]
     )
     return train_transform
@@ -87,10 +118,12 @@ def get_tiny_imagenet_test_transform():
             transforms.Resize(256),
             transforms.CenterCrop(224),
             transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[
+                                 0.229, 0.224, 0.225])
         ]
     )
     return test_transform
+
 
 def get_tiny_imagenet_dataloaders(batch_size, val_batch_size, num_workers, is_distributed=False):
     train_transform = get_tiny_imagenet_train_transform()
@@ -104,19 +137,18 @@ def get_tiny_imagenet_dataloaders(batch_size, val_batch_size, num_workers, is_di
     else:
         train_sampler = None
 
-
     train_loader = DataLoader(
-        train_set, 
-        batch_size=batch_size, 
-        shuffle=not is_distributed, 
+        train_set,
+        batch_size=batch_size,
+        shuffle=not is_distributed,
         num_workers=num_workers,
         pin_memory=True,
         sampler=train_sampler
     )
 
-    test_loader = get_imagenet_val_loader(val_batch_size, num_workers, is_distributed)
+    test_loader = get_imagenet_val_loader(
+        val_batch_size, num_workers, is_distributed)
     return train_loader, test_loader, num_data
-
 
 
 def get_tiny_imagenet_dataloaders_sample(
@@ -134,18 +166,19 @@ def get_tiny_imagenet_dataloaders_sample(
     else:
         train_sampler = None
 
-
     train_loader = DataLoader(
-        train_set, 
-        batch_size=batch_size, 
-        shuffle=not is_distributed, 
+        train_set,
+        batch_size=batch_size,
+        shuffle=not is_distributed,
         num_workers=num_workers,
         pin_memory=True,
         sampler=train_sampler
     )
 
-    test_loader = get_imagenet_val_loader(val_batch_size, num_workers, is_distributed)
+    test_loader = get_imagenet_val_loader(
+        val_batch_size, num_workers, is_distributed)
     return train_loader, test_loader, num_data
+
 
 def get_imagenet_val_loader(val_batch_size, num_workers=16, is_distributed=False):
     test_transform = get_tiny_imagenet_test_transform()
