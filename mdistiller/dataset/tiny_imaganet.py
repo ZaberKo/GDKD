@@ -41,7 +41,7 @@ class TinyImageNet(ImageFolder):
         if self.target_transform is not None:
             target = self.target_transform(target)
 
-        return img, target, index
+        return img, target
 
 
 class TinyImageNetInstanceSample(TinyImageNet):
@@ -51,9 +51,9 @@ class TinyImageNetInstanceSample(TinyImageNet):
     def __init__(self, folder, on_memory=True, transform=None, is_sample=False, k=4096):
         super().__init__(folder, on_memory=on_memory, transform=transform)
 
-        self.k = k
         self.is_sample = is_sample
         if self.is_sample:
+            self.k = k
             print('preparing contrastive data...')
             num_classes = 1000
             num_samples = len(self.samples)
@@ -129,7 +129,8 @@ def get_tiny_imagenet_dataloaders(batch_size, val_batch_size, num_workers, is_di
     train_transform = get_tiny_imagenet_train_transform()
 
     train_folder = os.path.join(data_folder, 'train')
-    train_set = TinyImageNet(train_folder, transform=train_transform)
+    train_set = TinyImageNetInstanceSample(
+        train_folder, transform=train_transform, is_sample=False)
     num_data = len(train_set)
 
     if is_distributed:
@@ -183,7 +184,7 @@ def get_tiny_imagenet_dataloaders_sample(
 def get_imagenet_val_loader(val_batch_size, num_workers=16, is_distributed=False):
     test_transform = get_tiny_imagenet_test_transform()
     test_folder = os.path.join(data_folder, 'val')
-    test_set = ImageFolder(test_folder, transform=test_transform)
+    test_set = TinyImageNet(test_folder, transform=test_transform)
     if is_distributed:
         # TODO: use EvalDistributedSampler
         test_sampler = DistributedSampler(test_set, shuffle=False,)
