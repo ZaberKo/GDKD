@@ -81,11 +81,13 @@ def main(cfg, resume, opts, group_flag=False, id=""):
     if group_flag:
         if id == "":
             id = "default"
-        experiment_name = experiment_name+"_"+id+"_" + \
-            datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+        experiment_name = experiment_name+"_"+id
+
+    experiment_name = experiment_name + \
+        f'_{datetime.now().strftime("%Y-%m-%d-%H-%M-%S")}'
 
     trainer = Trainer(
-       experiment_name, distiller, train_loader, val_loader, cfg
+        experiment_name, distiller, train_loader, val_loader, cfg
     )
     trainer.train(resume=resume)
 
@@ -113,6 +115,7 @@ def setup_cfg(args):
 
     cfg.freeze()
 
+
 # for training with original python reqs
 if __name__ == "__main__":
     import argparse
@@ -130,5 +133,5 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     setup_cfg(args)
-    
+
     main(cfg, args.resume, args.opts, group_flag=args.group, id=args.id)
