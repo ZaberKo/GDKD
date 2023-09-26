@@ -6,6 +6,8 @@ import torchvision.transforms as transforms
 from torch.utils.data import DistributedSampler, DataLoader
 
 from mdistiller.engine.utils import log_msg
+from .sampler import DistributedEvalSampler
+from .instance_sample import InstanceSample
 
 data_folder = os.path.join(os.path.dirname(
     os.path.abspath(__file__)), '../../data/tiny-imagenet-200')
@@ -27,7 +29,8 @@ class TinyImageNet(ImageFolder):
 
         self.samples = cached_samples
 
-        print(log_msg(f"Finished loading TinyImageNet into memory", "INFO"))
+        print(log_msg(
+            f"Finish loading TinyImageNet into memory, num data: {len(self)}", "INFO"))
 
     def __getitem__(self, index: int):
         if self.on_memory:
@@ -43,59 +46,14 @@ class TinyImageNet(ImageFolder):
         return img, target
 
 
-class TinyImageNetInstanceSample(TinyImageNet):
+class TinyImageNetInstanceSample(InstanceSample, TinyImageNet):
     """: Folder datasets which returns (img, label, index, contrast_index):
     """
 
-    def __init__(self, folder, on_memory=True, transform=None, is_sample=False, k=4096):
-        super().__init__(folder, on_memory=on_memory, transform=transform)
-
-        self.is_sample = is_sample
-        if self.is_sample:
-            self.k = k
-            print('preparing contrastive data...')
-            num_classes = 1000
-            num_samples = len(self.samples)
-            label = np.zeros(num_samples, dtype=np.int32)
-            for i in range(num_samples):
-                _, target = self.samples[i]
-                label[i] = target
-
-            self.cls_positive = [[] for i in range(num_classes)]
-            for i in range(num_samples):
-                self.cls_positive[label[i]].append(i)
-
-            self.cls_negative = [[] for i in range(num_classes)]
-            for i in range(num_classes):
-                for j in range(num_classes):
-                    if j == i:
-                        continue
-                    self.cls_negative[i].extend(self.cls_positive[j])
-
-            self.cls_positive = [np.asarray(
-                self.cls_positive[i], dtype=np.int32) for i in range(num_classes)]
-            self.cls_negative = [np.asarray(
-                self.cls_negative[i], dtype=np.int32) for i in range(num_classes)]
-            print('done.')
-
-    def __getitem__(self, index):
-        """
-        Args:
-            index (int): Index
-        Returns:
-            tuple: (image, target) where target is class_index of the target class.
-        """
-        img, target = super().__getitem__(index)
-
-        if self.is_sample:
-            # sample contrastive examples
-            pos_idx = index
-            neg_idx = np.random.choice(
-                self.cls_negative[target], self.k, replace=True)
-            sample_idx = np.hstack((np.asarray([pos_idx]), neg_idx))
-            return img, target, index, sample_idx
-        else:
-            return img, target, index
+    def __init__(self,  *args, k=-1, **kwargs):
+        TinyImageNet.__init__(
+            self, *args, **kwargs)
+        InstanceSample.__init__(self, k=k)
 
 
 def get_tiny_imagenet_train_transform():
@@ -124,12 +82,12 @@ def get_tiny_imagenet_test_transform():
     return test_transform
 
 
-def get_tiny_imagenet_dataloaders(batch_size, val_batch_size, num_workers, is_distributed=False):
+def get_tiny_imagenet_dataloaders(batch_size, val_batch_size, k=-1, num_workers=4,  is_distributed=False):
     train_transform = get_tiny_imagenet_train_transform()
 
     train_folder = os.path.join(data_folder, 'train')
     train_set = TinyImageNetInstanceSample(
-        train_folder, transform=train_transform, is_sample=False)
+        train_folder, transform=train_transform, k=k)
     num_data = len(train_set)
 
     if is_distributed:
@@ -146,47 +104,17 @@ def get_tiny_imagenet_dataloaders(batch_size, val_batch_size, num_workers, is_di
         sampler=train_sampler
     )
 
-    test_loader = get_imagenet_val_loader(
+    test_loader = get_tiny_imagenet_val_loader(
         val_batch_size, num_workers, is_distributed)
     return train_loader, test_loader, num_data
 
 
-def get_tiny_imagenet_dataloaders_sample(
-    batch_size, val_batch_size, num_workers=16, k=4096, is_distributed=False
-):
-
-    train_transform = get_tiny_imagenet_train_transform()
-    train_folder = os.path.join(data_folder, 'train')
-    train_set = TinyImageNetInstanceSample(
-        train_folder, transform=train_transform, is_sample=True, k=k)
-    num_data = len(train_set)
-
-    if is_distributed:
-        train_sampler = DistributedSampler(train_set)
-    else:
-        train_sampler = None
-
-    train_loader = DataLoader(
-        train_set,
-        batch_size=batch_size,
-        shuffle=not is_distributed,
-        num_workers=num_workers,
-        pin_memory=True,
-        sampler=train_sampler
-    )
-
-    test_loader = get_imagenet_val_loader(
-        val_batch_size, num_workers, is_distributed)
-    return train_loader, test_loader, num_data
-
-
-def get_imagenet_val_loader(val_batch_size, num_workers=16, is_distributed=False):
+def get_tiny_imagenet_val_loader(val_batch_size, num_workers=4, is_distributed=False):
     test_transform = get_tiny_imagenet_test_transform()
     test_folder = os.path.join(data_folder, 'val')
     test_set = TinyImageNet(test_folder, transform=test_transform)
     if is_distributed:
-        # TODO: use EvalDistributedSampler
-        test_sampler = DistributedSampler(test_set, shuffle=False,)
+        test_sampler = DistributedEvalSampler(test_set, shuffle=False)
     else:
         test_sampler = None
 

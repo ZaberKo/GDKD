@@ -1,9 +1,9 @@
 EXPERIMENT:
   NAME: ""
   TAG: "vanilla,res50"
-  PROJECT: "tiny_imagenet_baselines"
+  PROJECT: "cub2011_baselines"
 DATASET:
-  TYPE: "tiny-imagenet"
+  TYPE: "cub2011"
   NUM_WORKERS: 4
   TEST:
     BATCH_SIZE: 128

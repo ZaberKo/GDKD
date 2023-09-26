@@ -153,11 +153,12 @@ class Trainer():
             log_dict = OrderedDict(
                 {
                     "train_acc": self.train_meters["top1"].avg,
+                    "train_acc_top5": self.train_meters["top5"].avg,
                     "train_loss": self.train_meters["losses"].avg,
+                    "train_loss_ce": self.train_meters["loss_ce"].avg,
                     "test_acc": test_acc,
                     "test_acc_top5": test_acc_top5,
                     "test_loss": test_loss,
-                    "train_loss_ce": self.train_meters["loss_ce"].avg,
                 }
             )
             if "loss_kd" in self.train_meters:
@@ -230,9 +231,7 @@ class Trainer():
                 ).all_reduce()
             else:
                 # for non-tensor info, just update on the local process
-                self.train_info_meters[key].update(
-                    info, batch_size
-                )
+                self.train_info_meters[key].update(info)
 
         train_meters["losses"].update(loss.tolist(), batch_size).all_reduce()
         train_meters["top1"].update(acc1.item(), batch_size).all_reduce()
@@ -254,7 +253,7 @@ class Trainer():
         return msg
 
     def _preprocess_data(self, data) -> dict:
-        if type(self.train_loader.dataset).__name__.endswith("InstanceSample"):
+        if self.cfg.DISTILLER.TYPE == "CRD":
             image, target, index, contrastive_index = data
             image = image.float()
             image = image.cuda()

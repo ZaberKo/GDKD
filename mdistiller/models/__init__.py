@@ -1,6 +1,7 @@
 from .cifar import get_cifar100_model
 from .imagenet import get_imagenet_model
 from .tiny_imagenet import get_tiny_imagenet_model
+from .cub2011 import get_cub2011_model
 
 model_tag_dict = {
     "resnet32x4": "res32x4",
@@ -31,6 +32,8 @@ def get_model(cfg, name, pretrained=False):
         model = get_imagenet_model(name, pretrained=pretrained)
     elif cfg.DATASET.TYPE == "tiny-imagenet":
         model = get_tiny_imagenet_model(name, pretrained=pretrained)
+    elif cfg.DATASET.TYPE == "cub2011":
+        model = get_cub2011_model(name, pretrained=pretrained)  
     else:
         raise NotImplementedError
 

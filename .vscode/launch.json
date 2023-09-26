@@ -224,6 +224,20 @@
             ]
         },
         {
+            "name": "Train CUB2011",
+            "type": "python",
+            "request": "launch",
+            "module": "tools.train",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "args": [
+                "--cfg",
+                "configs/cub2011/vanilla/r34.yaml",
+                "LOG.WANDB",
+                "False",
+            ]
+        },
+        {
             "name": "Train DKD",
             "type": "python",
             "request": "launch",

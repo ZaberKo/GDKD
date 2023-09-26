@@ -1,76 +1,24 @@
 import os
 import numpy as np
 import torch
-from torchvision.datasets import ImageNet as _ImageNet
+from torchvision.datasets import ImageNet
 import torchvision.transforms as transforms
 
 from torch.utils.data.distributed import DistributedSampler
 from .sampler import DistributedEvalSampler
+from .instance_sample import InstanceSample
 
 data_folder = os.path.join(os.path.dirname(
     os.path.abspath(__file__)), '../../data/imagenet')
 
 
-class ImageNet(_ImageNet):
-    def __getitem__(self, index):
-        img, target = super().__getitem__(index)
-        return img, target, index
-
-
-class ImageNetInstanceSample(ImageNet):
+class ImageNetInstanceSample(InstanceSample, ImageNet):
     """: Folder datasets which returns (img, label, index, contrast_index):
     """
 
-    def __init__(self, folder, transform=None, target_transform=None,
-                 is_sample=False, k=4096):
-        super().__init__(folder, transform=transform)
-
-        self.k = k
-        self.is_sample = is_sample
-        if self.is_sample:
-            print('preparing contrastive data...')
-            num_classes = 1000
-            num_samples = len(self.samples)
-            label = np.zeros(num_samples, dtype=np.int32)
-            for i in range(num_samples):
-                _, target = self.samples[i]
-                label[i] = target
-
-            self.cls_positive = [[] for i in range(num_classes)]
-            for i in range(num_samples):
-                self.cls_positive[label[i]].append(i)
-
-            self.cls_negative = [[] for i in range(num_classes)]
-            for i in range(num_classes):
-                for j in range(num_classes):
-                    if j == i:
-                        continue
-                    self.cls_negative[i].extend(self.cls_positive[j])
-
-            self.cls_positive = [np.asarray(
-                self.cls_positive[i], dtype=np.int32) for i in range(num_classes)]
-            self.cls_negative = [np.asarray(
-                self.cls_negative[i], dtype=np.int32) for i in range(num_classes)]
-            print('done.')
-
-    def __getitem__(self, index):
-        """
-        Args:
-            index (int): Index
-        Returns:
-            tuple: (image, target) where target is class_index of the target class.
-        """
-        img, target, index = super().__getitem__(index)
-
-        if self.is_sample:
-            # sample contrastive examples
-            pos_idx = index
-            neg_idx = np.random.choice(
-                self.cls_negative[target], self.k, replace=True)
-            sample_idx = np.hstack((np.asarray([pos_idx]), neg_idx))
-            return img, target, index, sample_idx
-        else:
-            return img, target, index
+    def __init__(self,  *args, k=-1, **kwargs):
+        ImageNet.__init__(self, *args, **kwargs)
+        InstanceSample.__init__(self, k=k)
 
 
 def get_imagenet_train_transform():
@@ -99,37 +47,15 @@ def get_imagenet_test_transform():
     return test_transform
 
 
-def get_imagenet_dataloaders(batch_size, val_batch_size, num_workers, is_distributed=False):
+def get_imagenet_dataloaders(batch_size, val_batch_size, k=-1, num_workers=16, is_distributed=False):
     train_transform = get_imagenet_train_transform()
-    train_set = ImageNet(data_folder, split='train', transform=train_transform)
+    train_set = ImageNet(data_folder, split='train',
+                         transform=train_transform,  k=k)
     num_data = len(train_set)
     if is_distributed:
         train_sampler = DistributedSampler(train_set)
     else:
         train_sampler = None
-    train_loader = torch.utils.data.DataLoader(
-        train_set,
-        batch_size=batch_size,
-        shuffle=not is_distributed,
-        num_workers=num_workers,
-        pin_memory=True,
-        sampler=train_sampler
-    )
-    test_loader = get_imagenet_val_loader(
-        val_batch_size, num_workers, is_distributed)
-    return train_loader, test_loader, num_data
-
-
-def get_imagenet_dataloaders_sample(batch_size, val_batch_size, num_workers=16, k=4096, is_distributed=False):
-    train_transform = get_imagenet_train_transform()
-    train_set = ImageNetInstanceSample(
-        data_folder, split='train', transform=train_transform, is_sample=True, k=k)
-    num_data = len(train_set)
-    if is_distributed:
-        train_sampler = DistributedSampler(train_set)
-    else:
-        train_sampler = None
-
     train_loader = torch.utils.data.DataLoader(
         train_set,
         batch_size=batch_size,
@@ -145,7 +71,7 @@ def get_imagenet_dataloaders_sample(batch_size, val_batch_size, num_workers=16, 
 
 def get_imagenet_val_loader(val_batch_size, num_workers=16, is_distributed=False):
     test_transform = get_imagenet_test_transform()
-    test_set = _ImageNet(data_folder, split='val', transform=test_transform)
+    test_set = ImageNet(data_folder, split='val', transform=test_transform)
     if is_distributed:
         # Note: use with caution: test_set must be divisible by #gpu
         # test_sampler = DistributedSampler(test_set, shuffle=False, drop_last=True)

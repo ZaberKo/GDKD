@@ -1,7 +1,7 @@
 EXPERIMENT:
   NAME: ""
   TAG: "vanilla,res34"
-  PROJECT: "imagenet_baselines"
+  PROJECT: "tiny_imagenet_baselines"
 DATASET:
   TYPE: "tiny-imagenet"
   NUM_WORKERS: 4
@@ -13,7 +13,7 @@ DISTILLER:
   STUDENT: "ResNet34"
 SOLVER:
   BATCH_SIZE: 16
-  EPOCHS: 50
+  EPOCHS: 100
   LR: 0.001
   LR_SCHEDULER: "cosine"
   LR_MIN: 0.000001

@@ -1,16 +1,16 @@
 EXPERIMENT:
   NAME: ""
-  TAG: "vanilla,res50"
-  PROJECT: "tiny_imagenet_baselines"
+  TAG: "vanilla,res34"
+  PROJECT: "cub2011_baselines"
 DATASET:
-  TYPE: "tiny-imagenet"
+  TYPE: "cub2011"
   NUM_WORKERS: 4
   TEST:
     BATCH_SIZE: 128
 DISTILLER:
   TYPE: "NONE"
   TEACHER: ""
-  STUDENT: "ResNet50"
+  STUDENT: "ResNet34"
 SOLVER:
   BATCH_SIZE: 16
   EPOCHS: 100
