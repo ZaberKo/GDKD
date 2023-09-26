@@ -54,4 +54,4 @@ class Vanilla(Distiller):
     def forward_train(self, image, target, **kwargs):
         logits_student, _ = self.student(image)
         loss = F.cross_entropy(logits_student, target)
-        return logits_student, {"ce": loss}
+        return logits_student, {"loss_ce": loss}

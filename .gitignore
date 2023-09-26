@@ -132,3 +132,5 @@ exp/
 
 detection/debug/output/
 detection/debug/calc_logits/
+
+test.py

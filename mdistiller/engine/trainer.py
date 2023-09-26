@@ -21,6 +21,7 @@ from .utils import (
     Timer
 )
 
+
 class Trainer():
     def __init__(self, experiment_name, distiller, train_loader, val_loader, cfg):
         self.cfg = cfg
@@ -34,6 +35,7 @@ class Trainer():
 
         self.enable_progress_bar = cfg.LOG.ENABLE_PROGRESS_BAR
 
+        self.train_meters = None
         self.train_info_meters = None
 
         if is_main_process():
@@ -56,7 +58,7 @@ class Trainer():
         else:
             raise NotImplementedError(cfg.SOLVER.TYPE)
         return optimizer
-    
+
     def init_lr_scheduler(self, cfg, optimizer):
         if cfg.SOLVER.LR_SCHEDULER == "cosine":
             lr_scheduler = optim.lr_scheduler.CosineAnnealingLR(
@@ -119,6 +121,7 @@ class Trainer():
     def train_epoch(self, epoch):
         # lr = adjust_learning_rate(epoch, self.cfg, self.optimizer)
 
+        self.train_meters = defaultdict(AverageMeter)
         self.train_info_meters = defaultdict(AverageMeter)
 
         if self.is_distributed:
@@ -141,25 +144,24 @@ class Trainer():
         # validate
         test_acc, test_acc_top5, test_loss = validate(
             self.val_loader, self.distiller)
-        
+
         lr = self.lr_scheduler.get_last_lr()[0]
         self.lr_scheduler.step()
-
 
         # log
         if is_main_process():
             log_dict = OrderedDict(
                 {
-                    "train_acc": self.train_info_meters["top1"].avg,
-                    "train_loss": self.train_info_meters["losses"].avg,
+                    "train_acc": self.train_meters["top1"].avg,
+                    "train_loss": self.train_meters["losses"].avg,
                     "test_acc": test_acc,
                     "test_acc_top5": test_acc_top5,
                     "test_loss": test_loss,
-                    "train_loss_ce": self.train_info_meters["loss_ce"].avg,
+                    "train_loss_ce": self.train_meters["loss_ce"].avg,
                 }
             )
-            if "loss_kd" in self.train_info_meters:
-                log_dict["train_loss_kd"] = self.train_info_meters["loss_kd"].avg
+            if "loss_kd" in self.train_meters:
+                log_dict["train_loss_kd"] = self.train_meters["loss_kd"].avg
 
             log_dict.update({
                 k: v.avg for k, v in self.train_info_meters.items()
@@ -177,12 +179,12 @@ class Trainer():
                 "model": self.distiller.module.student.state_dict()}
             save_checkpoint(state, os.path.join(self.log_path, "latest.pth"))
             save_checkpoint(
-                student_state, os.path.join(self.log_path, "student_latest.pth")
+                student_state, os.path.join(
+                    self.log_path, "student_latest.pth")
             )
             if epoch % self.cfg.LOG.SAVE_CHECKPOINT_FREQ == 0:
                 save_checkpoint(
-                    state, os.path.join(
-                        self.log_path, f"epoch_{epoch}.pth")
+                    state, os.path.join(self.log_path, f"epoch_{epoch}.pth")
                 )
                 save_checkpoint(
                     student_state,
@@ -192,13 +194,14 @@ class Trainer():
             if test_acc >= self.best_acc:
                 save_checkpoint(state, os.path.join(self.log_path, "best.pth"))
                 save_checkpoint(
-                    student_state, os.path.join(self.log_path, "student_best.pth")
+                    student_state, os.path.join(
+                        self.log_path, "student_best.pth")
                 )
 
     def train_iter(self, data, epoch):
         self.optimizer.zero_grad()
 
-        train_meters = self.train_info_meters
+        train_meters = self.train_meters
 
         with Timer() as train_timer:
             with Timer() as data_timer:
@@ -206,7 +209,8 @@ class Trainer():
             train_meters["data_time"].update(data_timer.interval)
 
             # forward
-            preds, losses_dict = self.distiller(image=image, target=target, epoch=epoch, **other_data_dict)
+            preds, losses_dict = self.distiller(
+                image=image, target=target, epoch=epoch, **other_data_dict)
 
             # backward
             loss = sum([l.mean() for l in losses_dict.values()])
@@ -224,9 +228,13 @@ class Trainer():
                 self.train_info_meters[key].update(
                     info.item(), batch_size
                 ).all_reduce()
+            else:
+                # for non-tensor info, just update on the local process
+                self.train_info_meters[key].update(
+                    info, batch_size
+                )
 
-        train_meters["losses"].update(
-            loss.tolist(), batch_size).all_reduce()
+        train_meters["losses"].update(loss.tolist(), batch_size).all_reduce()
         train_meters["top1"].update(acc1.item(), batch_size).all_reduce()
         train_meters["top5"].update(acc5.item(), batch_size).all_reduce()
 
@@ -260,5 +268,3 @@ class Trainer():
             image = image.cuda()
             target = target.cuda()
             return image, target, {}
-
-
