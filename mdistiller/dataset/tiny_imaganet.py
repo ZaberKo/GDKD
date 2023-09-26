@@ -1,5 +1,4 @@
 import os
-import sys
 import numpy as np
 import torch
 from torchvision.datasets import ImageFolder
@@ -18,9 +17,9 @@ class TinyImageNet(ImageFolder):
         self.on_memory = on_memory
 
         if self.on_memory:
-            self.init_cache()
+            self._init_cache()
 
-    def init_cache(self):
+    def _init_cache(self):
         cached_samples = []
         for path, target in self.samples:
             img = self.loader(path)
@@ -86,7 +85,7 @@ class TinyImageNetInstanceSample(TinyImageNet):
         Returns:
             tuple: (image, target) where target is class_index of the target class.
         """
-        img, target, index = super().__getitem__(index)
+        img, target = super().__getitem__(index)
 
         if self.is_sample:
             # sample contrastive examples
