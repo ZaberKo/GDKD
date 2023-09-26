@@ -7,7 +7,7 @@ class InstanceSample:
         if self.is_sample:
             self.k = k
             print('preparing contrastive data...')
-            num_classes = 1000
+            num_classes = len(self.classes)
             num_samples = len(self)
             label = np.zeros(num_samples, dtype=np.int32)
             for i in range(num_samples):
