@@ -49,7 +49,7 @@ def get_imagenet_test_transform():
 
 def get_imagenet_dataloaders(batch_size, val_batch_size, k=-1, num_workers=16, is_distributed=False):
     train_transform = get_imagenet_train_transform()
-    train_set = ImageNet(data_folder, split='train',
+    train_set = ImageNetInstanceSample(data_folder, split='train',
                          transform=train_transform,  k=k)
     num_data = len(train_set)
     if is_distributed:
