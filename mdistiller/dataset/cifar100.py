@@ -6,7 +6,7 @@ from torchvision.transforms import AutoAugment, AutoAugmentPolicy
 from PIL import Image
 
 
-from .cutout import Cutout
+from .transforms.cutout import Cutout
 
 
 def get_data_folder():
