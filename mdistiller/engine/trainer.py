@@ -54,6 +54,7 @@ class Trainer():
                 lr=cfg.SOLVER.LR,
                 momentum=cfg.SOLVER.MOMENTUM,
                 weight_decay=cfg.SOLVER.WEIGHT_DECAY,
+                nesterov=cfg.SOLVER.SGD_NESTEROV,
             )
         else:
             raise NotImplementedError(cfg.SOLVER.TYPE)
