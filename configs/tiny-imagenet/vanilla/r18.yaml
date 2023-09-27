@@ -1,6 +1,6 @@
 EXPERIMENT:
   NAME: ""
-  TAG: "vanilla,res34"
+  TAG: "vanilla,res18"
   PROJECT: "tiny_imagenet_baselines"
 DATASET:
   TYPE: "tiny-imagenet"
@@ -10,7 +10,7 @@ DATASET:
 DISTILLER:
   TYPE: "NONE"
   TEACHER: ""
-  STUDENT: "ResNet34"
+  STUDENT: "ResNet18"
 SOLVER:
   BATCH_SIZE: 16
   EPOCHS: 100
