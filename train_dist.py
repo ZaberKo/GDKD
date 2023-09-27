@@ -4,7 +4,7 @@ import os
 import subprocess
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
-from mdistiller.engine.cfg import CFG as cfg
+# from mdistiller.engine.cfg import CFG as cfg
 from mdistiller.engine.utils import log_msg
 
 
@@ -27,9 +27,9 @@ if __name__ == "__main__":
     parser.add_argument("opts", nargs="*")
 
     args = parser.parse_args()
-    cfg.merge_from_file(args.cfg)
-    cfg.merge_from_list(args.opts)
-    cfg.freeze()
+    # cfg.merge_from_file(args.cfg)
+    # cfg.merge_from_list(args.opts)
+    # cfg.freeze()
 
     allgpu_ids = os.environ.get("CUDA_VISIBLE_DEVICES", "0").split(",")
     allgpu_ids = [int(i) for i in allgpu_ids if i != ""]
