@@ -41,16 +41,13 @@ def get_cifar(cfg):
 
 
 def get_imagenet(cfg):
-    if cfg.DATASET.ENHANCE_AUGMENT:
-        raise ValueError(
-            "Enhance augment is not supported for imagenet dataset")
-
     train_loader, val_loader, num_data = get_imagenet_dataloaders(
         batch_size=cfg.SOLVER.BATCH_SIZE,
         val_batch_size=cfg.DATASET.TEST.BATCH_SIZE,
         k=cfg.CRD.NCE.K if cfg.DISTILLER.TYPE == "CRD" else -1,
         num_workers=cfg.DATASET.NUM_WORKERS,
-        is_distributed=is_distributed()
+        is_distributed=is_distributed(),
+        enhance_augment=cfg.DATASET.ENHANCE_AUGMENT
     )
     num_classes = 1000
 
@@ -58,16 +55,13 @@ def get_imagenet(cfg):
 
 
 def get_tiny_imagenet(cfg):
-    if cfg.DATASET.ENHANCE_AUGMENT:
-        raise ValueError(
-            "Enhance augment is not supported for tiny-imagenet dataset")
-
     train_loader, val_loader, num_data = get_tiny_imagenet_dataloaders(
         batch_size=cfg.SOLVER.BATCH_SIZE,
         val_batch_size=cfg.DATASET.TEST.BATCH_SIZE,
         k=cfg.CRD.NCE.K if cfg.DISTILLER.TYPE == "CRD" else -1,
         num_workers=cfg.DATASET.NUM_WORKERS,
-        is_distributed=is_distributed()
+        is_distributed=is_distributed(),
+        enhance_augment=cfg.DATASET.ENHANCE_AUGMENT
     )
     num_classes = 200
 
@@ -75,16 +69,13 @@ def get_tiny_imagenet(cfg):
 
 
 def get_cub2011(cfg):
-    if cfg.DATASET.ENHANCE_AUGMENT:
-        raise ValueError(
-            "Enhance augment is not supported for cub2011 dataset")
-
     train_loader, val_loader, num_data = get_cub2011_dataloaders(
         batch_size=cfg.SOLVER.BATCH_SIZE,
         val_batch_size=cfg.DATASET.TEST.BATCH_SIZE,
         k=cfg.CRD.NCE.K if cfg.DISTILLER.TYPE == "CRD" else -1,
         num_workers=cfg.DATASET.NUM_WORKERS,
-        is_distributed=is_distributed()
+        is_distributed=is_distributed(),
+        enhance_augment=cfg.DATASET.ENHANCE_AUGMENT
     )
 
     num_classes = 200

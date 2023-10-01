@@ -46,9 +46,29 @@ def get_imagenet_test_transform():
     )
     return test_transform
 
+def get_imagenet_train_transform_strong_aug():
+    # follows Swin
+    try:
+        from timm.data import create_transform
+        train_transform = create_transform(
+            input_size=224,
+            is_training=True,
+            auto_augment="rand-m9-mstd0.5-inc1",
+            re_prob=0.25,
+            re_mode="pixel",
+            re_count=1,
+            interpolation='bicubic'
+        )
+        return train_transform
+    except:
+        raise ImportError("timm is required")
 
-def get_imagenet_dataloaders(batch_size, val_batch_size, k=-1, num_workers=16, is_distributed=False):
-    train_transform = get_imagenet_train_transform()
+
+def get_imagenet_dataloaders(batch_size, val_batch_size, k=-1, num_workers=16, is_distributed=False, enhance_augment=False):
+    if enhance_augment:
+        train_transform = get_imagenet_train_transform_strong_aug()
+    else:
+        train_transform = get_imagenet_train_transform()
     train_set = ImageNetInstanceSample(data_folder, split='train',
                          transform=train_transform,  k=k)
     num_data = len(train_set)

@@ -8,6 +8,11 @@ from torch.utils.data import DistributedSampler, DataLoader
 from mdistiller.engine.utils import log_msg
 from .sampler import DistributedEvalSampler
 from .instance_sample import InstanceSample
+from .imagenet import (
+    get_imagenet_train_transform,
+    get_imagenet_train_transform_strong_aug,
+    get_imagenet_test_transform
+)
 
 data_folder = os.path.join(os.path.dirname(
     os.path.abspath(__file__)), '../../data/tiny-imagenet-200')
@@ -57,33 +62,20 @@ class TinyImageNetInstanceSample(InstanceSample, TinyImageNet):
 
 
 def get_tiny_imagenet_train_transform():
-    train_transform = transforms.Compose(
-        [
-            transforms.RandomResizedCrop(224),
-            transforms.RandomHorizontalFlip(),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[
-                                 0.229, 0.224, 0.225])
-        ]
-    )
-    return train_transform
+    return get_imagenet_train_transform()
 
+def get_tiny_imagenet_train_transform_with_strong_aug():
+    return get_imagenet_train_transform_strong_aug()
 
 def get_tiny_imagenet_test_transform():
-    test_transform = transforms.Compose(
-        [
-            transforms.Resize(256),
-            transforms.CenterCrop(224),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[
-                                 0.229, 0.224, 0.225])
-        ]
-    )
-    return test_transform
+    return get_imagenet_test_transform()
 
 
-def get_tiny_imagenet_dataloaders(batch_size, val_batch_size, k=-1, num_workers=4,  is_distributed=False):
-    train_transform = get_tiny_imagenet_train_transform()
+def get_tiny_imagenet_dataloaders(batch_size, val_batch_size, k=-1, num_workers=4,  is_distributed=False, enhance_augment=False):
+    if enhance_augment:
+        train_transform = get_tiny_imagenet_train_transform_with_strong_aug()
+    else:
+        train_transform = get_tiny_imagenet_train_transform()
 
     train_folder = os.path.join(data_folder, 'train')
     train_set = TinyImageNetInstanceSample(

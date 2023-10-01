@@ -1,9 +1,9 @@
 EXPERIMENT:
   NAME: ""
-  TAG: "vanilla,res34"
-  PROJECT: "tiny_imagenet_baselines"
+  TAG: "vanilla,res18"
+  PROJECT: "cub2011_baselines"
 DATASET:
-  TYPE: "tiny-imagenet"
+  TYPE: "cub2011"
   ENHANCE_AUGMENT: true
   NUM_WORKERS: 4
   TEST:
@@ -11,7 +11,7 @@ DATASET:
 DISTILLER:
   TYPE: "NONE"
   TEACHER: ""
-  STUDENT: "ResNet34"
+  STUDENT: "ResNet18"
 SOLVER:
   BATCH_SIZE: 32
   EPOCHS: 100

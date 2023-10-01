@@ -4,6 +4,7 @@ EXPERIMENT:
   PROJECT: "tiny_imagenet_baselines"
 DATASET:
   TYPE: "tiny-imagenet"
+  ENHANCE_AUGMENT: true
   NUM_WORKERS: 4
   TEST:
     BATCH_SIZE: 128
@@ -12,7 +13,7 @@ DISTILLER:
   TEACHER: ""
   STUDENT: "ResNet50"
 SOLVER:
-  BATCH_SIZE: 16
+  BATCH_SIZE: 32
   EPOCHS: 100
   LR: 0.001
   LR_SCHEDULER: "step"
