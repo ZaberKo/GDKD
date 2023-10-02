@@ -1,14 +1,11 @@
 import os
-from typing import Callable, Optional
-import numpy as np
 import torch
-from torchvision.datasets import Food101
-from torchvision.datasets.folder import default_loader
-import torchvision.transforms as transforms
-from torch.utils.data import DistributedSampler, DataLoader
-import pandas as pd
+from torchvision.datasets import Food101 as Food101Base
 
-from functools import reduce
+from torch.utils.data import DistributedSampler, DataLoader
+
+import PIL.Image
+import io
 
 from mdistiller.engine.utils import log_msg
 from .sampler import DistributedEvalSampler
@@ -20,7 +17,46 @@ from .imagenet import (
 )
 
 data_folder = os.path.join(os.path.dirname(
-    os.path.abspath(__file__)), '../../data')
+    os.path.abspath(__file__)), '../../data/food101')
+
+
+class Food101(Food101Base):
+    def __init__(self, *args, on_memory: bool = True, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.on_memory = on_memory
+
+        self.loader = lambda p: PIL.Image.open(p).convert("RGB")
+
+        if self.on_memory:
+            self._init_cache()
+
+    def _init_cache(self):
+        # Direadly load Image consumes too many memory, so we load bytes and then convert to Image at fetch time.
+        self.cached_images_bytes = []
+
+        for path in self._image_files:
+            with open(path, "rb") as f:
+                self.cached_images_bytes.append(io.BytesIO(f.read()))
+
+        print(
+            log_msg(f"Finish loading Food101 into memory, num data: {len(self)}", "INFO"))
+        
+    def __getitem__(self, idx):
+        label = self._labels[idx]
+        if self.on_memory:
+            image_bytes = self.cached_images_bytes[idx]
+            image = self.loader(image_bytes)
+        else:
+            image_file = self._image_files[idx]
+            image = self.loader(image_file)
+
+        if self.transform:
+            image = self.transform(image)
+
+        if self.target_transform:
+            label = self.target_transform(label)
+
+        return image, label
 
 
 class Food101InstanceSample(InstanceSample, Food101):
