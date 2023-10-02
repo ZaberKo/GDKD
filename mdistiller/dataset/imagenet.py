@@ -86,7 +86,9 @@ def get_imagenet_dataloaders(batch_size, val_batch_size, k=-1, num_workers=16, i
     )
     test_loader = get_imagenet_val_loader(
         val_batch_size, num_workers, is_distributed)
-    return train_loader, test_loader, num_data
+    
+    num_classes = len(train_set.classes)
+    return train_loader, test_loader, num_data, num_classes
 
 
 def get_imagenet_val_loader(val_batch_size, num_workers=16, is_distributed=False):

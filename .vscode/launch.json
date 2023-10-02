@@ -224,7 +224,7 @@
             ]
         },
         {
-            "name": "Train CUB2011",
+            "name": "Train TL",
             "type": "python",
             "request": "launch",
             "module": "tools.train",
@@ -232,7 +232,8 @@
             "justMyCode": false,
             "args": [
                 "--cfg",
-                "configs/cub2011/vanilla/r34.yaml",
+                // "configs/cub2011/vanilla/r34.yaml",
+                "configs/TL/dtd/vanilla/r18.yaml",
                 "LOG.WANDB",
                 "False",
             ]

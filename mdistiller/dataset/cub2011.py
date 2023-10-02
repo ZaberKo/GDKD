@@ -144,7 +144,9 @@ def get_cub2011_dataloaders(batch_size, val_batch_size, k=-1, num_workers=4, is_
 
     test_loader = get_cub2011_val_loader(
         val_batch_size, num_workers, is_distributed)
-    return train_loader, test_loader, num_data
+    
+    num_classes = len(train_set.classes)
+    return train_loader, test_loader, num_data, num_classes
 
 
 def get_cub2011_val_loader(val_batch_size, num_workers=4, is_distributed=False):

@@ -98,7 +98,9 @@ def get_tiny_imagenet_dataloaders(batch_size, val_batch_size, k=-1, num_workers=
 
     test_loader = get_tiny_imagenet_val_loader(
         val_batch_size, num_workers, is_distributed)
-    return train_loader, test_loader, num_data
+    
+    num_classes = len(train_set.classes)
+    return train_loader, test_loader, num_data, num_classes
 
 
 def get_tiny_imagenet_val_loader(val_batch_size, num_workers=4, is_distributed=False):
