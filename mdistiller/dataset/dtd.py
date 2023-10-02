@@ -23,6 +23,7 @@ from .imagenet import (
 data_folder = os.path.join(os.path.dirname(
     os.path.abspath(__file__)), '../../data')
 
+#TODO: add DTD on_memory option
 
 class DTDInstanceSample(InstanceSample, DTD):
     def __init__(self,  *args, k=-1, **kwargs):
@@ -55,6 +56,8 @@ def get_dtd_dataloaders(batch_size, val_batch_size, k=-1, num_workers=4, is_dist
         train_transform = get_dtd_train_transform_with_strong_aug()
     else:
         train_transform = get_dtd_train_transform()
+
+    #TODO: concat train & val?
     train_set = DTDInstanceSample(
         data_folder, split="train", transform=train_transform, k=k, download=True)
     num_data = len(train_set)
@@ -83,7 +86,7 @@ def get_dtd_dataloaders(batch_size, val_batch_size, k=-1, num_workers=4, is_dist
 def get_dtd_val_loader(val_batch_size, num_workers=4, is_distributed=False):
     test_transform = get_dtd_test_transform()
     test_set = DTD(
-        data_folder, split="val", transform=test_transform, download=True)
+        data_folder, split="test", transform=test_transform, download=True)
     if is_distributed:
         test_sampler = DistributedEvalSampler(test_set, shuffle=False)
     else:
