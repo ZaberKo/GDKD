@@ -4,7 +4,7 @@ EXPERIMENT:
   PROJECT: "transfer_baselines"
 DATASET:
   TYPE: "tiny-imagenet"
-  NUM_WORKERS: 32
+  NUM_WORKERS: 4
   TEST:
     BATCH_SIZE: 128
 DISTILLER:
