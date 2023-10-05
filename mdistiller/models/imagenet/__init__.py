@@ -4,8 +4,11 @@ import torch.utils.model_zoo as model_zoo
 from pathlib import Path
 from collections import OrderedDict
 
-from .resnet import resnet18, resnet34, resnet50, resnet101, resnet152, get_default_model_weights
-from .mobilenetv1 import MobileNetV1
+from .resnet import (
+    resnet18, resnet34, resnet50, resnet101, resnet152, 
+    get_default_model_weights as get_default_resnet_weights
+)
+from .mobilenetv1 import get_mobilenetv1, get_mobilenetv1_weights
 
 imagenet_model_dir = Path(__file__).absolute().parent/"../../../download_ckpts/imagenet_teachers/"
 
@@ -16,7 +19,7 @@ imagenet_model_dict = {
     "ResNet34": (resnet34, imagenet_model_dir/"resnet34"),
     "ResNet50": (resnet50, imagenet_model_dir/"resnet50"),
     "ResNet101": (resnet101, imagenet_model_dir/"resnet101"),
-    "MobileNetV1": (MobileNetV1, None) # use for student only
+    "MobileNetV1": (get_mobilenetv1, imagenet_model_dir/"mv1/student_100.pth")
 }
 
 
@@ -29,7 +32,10 @@ def get_imagenet_model(name, pretrained=False, num_classes=1000):
         model = gen_model(pretrained=False, num_classes=num_classes)
 
         if pretrained:
-            state_dict = get_default_model_weights(model_dir.name, model_dir)
+            if name == "MobileNetV1":
+                state_dict = get_mobilenetv1_weights(model_dir)
+            else:
+                state_dict = get_default_resnet_weights(model_dir.name, model_dir)
             new_state_dict = OrderedDict({
                 k: v
                 for k, v in state_dict.items()

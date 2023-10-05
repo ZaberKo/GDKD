@@ -67,3 +67,15 @@ class MobileNetV1(nn.Module):
 
     def get_stage_channels(self):
         return [128, 256, 512, 1024]
+
+
+def get_mobilenetv1(pretrained=False, model_dir=None, **kwargs):
+    model = MobileNetV1(**kwargs)
+    if pretrained:
+        # use our pretrained model
+        model.load_state_dict(get_mobilenetv1_weights(model_dir))
+    
+    return model
+
+def get_mobilenetv1_weights(model_dir):
+    return torch.load(model_dir)["model"]
