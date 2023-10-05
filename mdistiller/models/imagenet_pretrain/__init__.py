@@ -8,7 +8,7 @@ from ..imagenet import get_imagenet_model
 from mdistiller.engine.utils import load_checkpoint
 
 model_base_dir = Path(__file__).absolute(
-).parent.parent.parent/"download_ckpts"
+).parent.parent.parent.parent/"download_ckpts"
 
 tiny_imagenet_model_dir = model_base_dir/"tiny_imagenet_teachers/"
 cub2011_model_dir = model_base_dir/"cub2011_teachers/"
