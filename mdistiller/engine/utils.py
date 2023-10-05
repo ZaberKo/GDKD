@@ -103,7 +103,12 @@ def save_checkpoint(obj, path):
 
 def load_checkpoint(path):
     with open(path, "rb") as f:
-        return torch.load(f, map_location="cpu")
+        state_dict = torch.load(f, map_location="cpu")
+
+    if len(state_dict)==1 and "model" in state_dict:
+        state_dict = state_dict["model"]
+
+    return state_dict
 
 
 def reduce_tensor(tensor, avg=True):

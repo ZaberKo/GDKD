@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from mdistiller.engine.utils import load_checkpoint
 
 class MobileNetV1(nn.Module):
     def __init__(self, num_classes=1000, **kwargs):
@@ -78,4 +79,4 @@ def get_mobilenetv1(pretrained=False, model_dir=None, **kwargs):
     return model
 
 def get_mobilenetv1_weights(model_dir):
-    return torch.load(model_dir)["model"]
+    return load_checkpoint(model_dir)

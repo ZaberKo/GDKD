@@ -104,7 +104,7 @@ class Trainer():
     def train(self, resume=False):
         epoch = 1
         if resume:
-            state = load_checkpoint(os.path.join(self.log_path, "latest"))
+            state = torch.load(os.path.join(self.log_path, "latest"))
             epoch = state["epoch"] + 1
             self.distiller.load_state_dict(state["model"])
             self.optimizer.load_state_dict(state["optimizer"])

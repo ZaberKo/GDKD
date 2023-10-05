@@ -94,6 +94,6 @@ def get_cifar100_model(name, pretrained=False, aug=True):
         ), "no pretrain model for teacher {}".format(name)
 
         
-        model.load_state_dict(load_checkpoint(pretrained_model_path)["model"])
+        model.load_state_dict(load_checkpoint(pretrained_model_path))
     
     return model

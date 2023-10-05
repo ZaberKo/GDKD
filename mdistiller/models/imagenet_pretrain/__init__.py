@@ -18,20 +18,20 @@ food101_model_dir = model_base_dir/"food101_teachers/"
 
 model_weights_dict = {
     "tiny-imagenet": {
-        "ResNet34": tiny_imagenet_model_dir/"resnet34/xxx.pth",
-        "ResNet50": tiny_imagenet_model_dir/"resnet50/xxx.pth",
+        "ResNet34": tiny_imagenet_model_dir/"resnet34/student_100.pth",
+        "ResNet50": tiny_imagenet_model_dir/"resnet50/student_100.pth",
     },
     "cub2011": {
-        "ResNet34": cub2011_model_dir/"resnet34/xxx.pth",
-        "ResNet50": cub2011_model_dir/"resnet50/xxx.pth",
+        "ResNet34": cub2011_model_dir/"resnet34/student_100.pth",
+        "ResNet50": cub2011_model_dir/"resnet50/student_100.pth",
     },
     "dtd": {
-        "ResNet34": dtd_model_dir/"resnet34/xxx.pth",
-        "ResNet50": dtd_model_dir/"resnet50/xxx.pth",
+        "ResNet34": dtd_model_dir/"resnet34/student_100.pth",
+        "ResNet50": dtd_model_dir/"resnet50/student_100.pth",
     },
     "food101": {
-        "ResNet34": food101_model_dir/"resnet34/xxx.pth",
-        "ResNet50": food101_model_dir/"resnet50/xxx.pth",
+        "ResNet34": food101_model_dir/"resnet34/student_100.pth",
+        "ResNet50": food101_model_dir/"resnet50/student_100.pth",
     }
 }
 

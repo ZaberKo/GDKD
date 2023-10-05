@@ -108,7 +108,7 @@ def main(cfg, use_val_transform=False):
         ), "no pretrain model for teacher {}".format(teacher_model)
         model_teacher = net(num_classes=num_classes)
         model_teacher.load_state_dict(
-            load_checkpoint(pretrain_model_path)["model"])
+            load_checkpoint(pretrain_model_path))
 
     model_teacher.cuda()
 
