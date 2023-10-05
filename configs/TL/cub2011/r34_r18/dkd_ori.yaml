@@ -1,22 +1,22 @@
 EXPERIMENT:
   NAME: ""
-  TAG: "ti,sgdkd,res50,mobilenetv1"
+  TAG: "cub2011,dkd,res34,res18"
   PROJECT: "transfer_baselines"
 DATASET:
-  TYPE: "tiny-imagenet"
+  TYPE: "cub2011"
   NUM_WORKERS: 16
   TEST:
-    BATCH_SIZE: 512
+    BATCH_SIZE: 128
 DISTILLER:
-  TYPE: "SGDKD"
-  TEACHER: "ResNet50"
-  STUDENT: "MobileNetV1"
+  TYPE: "DKD"
+  TEACHER: "ResNet34"
+  STUDENT: "ResNet18"
 SOLVER:
   BATCH_SIZE: 64
   EPOCHS: 100
-  LR: 0.001
+  LR: 0.0025
   LR_SCHEDULER: "step"
-  LR_DECAY_STAGES: [30, 60]
+  LR_DECAY_STAGES: [40, 80]
   LR_DECAY_RATE: 0.1
   WEIGHT_DECAY: 0.001
   MOMENTUM: 0.9
@@ -27,6 +27,6 @@ LOG:
 DKD:
   CE_WEIGHT: 1.0
   ALPHA: 0.5
-  BETA: 2.0
+  BETA: 0.5
   T: 1.0
   WARMUP: 1

@@ -1,9 +1,9 @@
 EXPERIMENT:
   NAME: ""
-  TAG: "ti,reviewkd,res34,res18"
+  TAG: "cub2011,reviewkd,res34,res18"
   PROJECT: "transfer_baselines"
 DATASET:
-  TYPE: "tiny-imagenet"
+  TYPE: "cub2011"
   NUM_WORKERS: 32
   TEST:
     BATCH_SIZE: 128
