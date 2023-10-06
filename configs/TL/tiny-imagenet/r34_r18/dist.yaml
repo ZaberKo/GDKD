@@ -1,14 +1,14 @@
 EXPERIMENT:
   NAME: ""
-  TAG: "ti,sgdkd,res34,res18"
+  TAG: "ti,dist,res34,res18"
   PROJECT: "transfer_baselines"
 DATASET:
   TYPE: "tiny-imagenet"
   NUM_WORKERS: 4
   TEST:
-    BATCH_SIZE: 512
+    BATCH_SIZE: 128
 DISTILLER:
-  TYPE: "SGDKD"
+  TYPE: "DIST"
   TEACHER: "ResNet34"
   STUDENT: "ResNet18"
 SOLVER:
@@ -21,13 +21,8 @@ SOLVER:
   WEIGHT_DECAY: 0.001
   MOMENTUM: 0.9
   TYPE: "SGD"
+DIST:
+  T: 1
 LOG:
   TENSORBOARD_FREQ: 50
   SAVE_CHECKPOINT_FREQ: 5
-SGDKD:
-  CE_WEIGHT: 1.0
-  W0: 0.5
-  W1: 0.5
-  ETA: 0.8
-  T: 1.0
-  WARMUP: 1

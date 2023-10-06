@@ -1,14 +1,14 @@
 EXPERIMENT:
   NAME: ""
-  TAG: "cub2011,sgdkd,res50,mobilenetv1"
+  TAG: "cub2011,dist,res50,mobilenetv1"
   PROJECT: "transfer_baselines"
 DATASET:
   TYPE: "cub2011"
   NUM_WORKERS: 4
   TEST:
-    BATCH_SIZE: 512
+    BATCH_SIZE: 128
 DISTILLER:
-  TYPE: "SGDKD"
+  TYPE: "DIST"
   TEACHER: "ResNet50"
   STUDENT: "MobileNetV1"
 SOLVER:
@@ -21,12 +21,8 @@ SOLVER:
   WEIGHT_DECAY: 0.001
   MOMENTUM: 0.9
   TYPE: "SGD"
+DIST:
+  T: 1
 LOG:
   TENSORBOARD_FREQ: 50
   SAVE_CHECKPOINT_FREQ: 5
-DKD:
-  CE_WEIGHT: 1.0
-  ALPHA: 0.5
-  BETA: 2.0
-  T: 1.0
-  WARMUP: 1
