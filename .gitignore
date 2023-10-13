@@ -130,7 +130,4 @@ exp/
 
 !configs/cifar100/dist/
 
-detection/debug/output/
-detection/debug/calc_logits/
-
 test.py
