@@ -98,6 +98,10 @@ def main(cfg, resume, opts, group_flag=False, id=""):
             id = "default"
         experiment_name = experiment_name+"_"+id+"_" + \
             datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+        
+    if cfg.LOG.WANDB_MODEL_LOG and is_main_process():
+        wandb.watch(distiller.module.student, log="all",
+                    log_freq=cfg.LOG.WANDB_MODEL_LOG_FREQ, log_graph=True)
 
     trainer = Trainer(
         experiment_name, distiller, train_loader, val_loader, cfg
@@ -137,6 +141,9 @@ def setup_cfg(args):
         random.seed(seed)
         cfg.EXPERIMENT.TAG += ",seed_"+str(seed)
 
+    if args.wandb_model_log:
+        cfg.LOG.WANDB_MODEL_LOG = True
+
     cfg.freeze()
 
 
@@ -153,6 +160,7 @@ if __name__ == "__main__":
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--seed", type=int)
     parser.add_argument("--data_workers", type=int, default=None)
+    parser.add_argument("--wandb_model_log", action="store_true")
     parser.add_argument("opts", nargs="*")
 
     args = parser.parse_args()
