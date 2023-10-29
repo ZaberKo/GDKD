@@ -2,8 +2,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from .utils import ConvReg
+
 from ._base import Distiller
-from ._common import ConvReg, get_feat_shapes
+from .utils import get_feat_shapes
 
 
 class FitNet(Distiller):

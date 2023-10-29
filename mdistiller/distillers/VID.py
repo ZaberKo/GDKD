@@ -4,7 +4,7 @@ import torch.nn.functional as F
 import numpy as np
 
 from ._base import Distiller
-from ._common import get_feat_shapes
+from .utils import get_feat_shapes
 
 
 def conv1x1(in_channels, out_channels, stride=1):

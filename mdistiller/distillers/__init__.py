@@ -12,9 +12,11 @@ from .SP import SP
 from .VID import VID
 from .ReviewKD import ReviewKD
 from .DKD import DKD
-from .GDKD import GDKD
 from .DKDMod import DKDMod
+from .GDKD import GDKD
 from .DIST import DIST
+
+from .GDKDAutoW import GDKDAutoW
 
 from ..models import get_model
 
@@ -35,7 +37,8 @@ distiller_dict = {
     "DKD": DKD,
     "DKDMod": DKDMod,
     "GDKD": GDKD,
-    "DIST": DIST
+    "DIST": DIST,
+    "GDKDAutoW": GDKDAutoW
 }
 
 

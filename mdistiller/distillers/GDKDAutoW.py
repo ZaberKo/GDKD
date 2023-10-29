@@ -35,7 +35,7 @@ def cat_mask(t, mask1, mask2):
     return rt
 
 
-def gdkd_loss(logits_student, logits_teacher, target, k, strategy, w0, w1, w2, temperature, kl_type):
+def gdkd_loss(logits_student, logits_teacher, target, k, strategy, m, temperature, kl_type):
     mask_u1, mask_u2 = get_masks(logits_teacher, k, strategy)
 
     soft_logits_student = logits_student / temperature
@@ -55,6 +55,9 @@ def gdkd_loss(logits_student, logits_teacher, target, k, strategy, w0, w1, w2, t
         * (temperature**2)
     )
 
+    b_t = p0_teacher[:, 0]
+    b_o = p0_teacher[:, 1]
+
     # topk loss
     log_p1_student = F.log_softmax(
         soft_logits_student - MASK_MAGNITUDE * mask_u2, dim=1
@@ -63,7 +66,10 @@ def gdkd_loss(logits_student, logits_teacher, target, k, strategy, w0, w1, w2, t
         soft_logits_teacher - MASK_MAGNITUDE * mask_u2, dim=1
     )
 
-    low_top_loss = kl_div(log_p1_student, log_p1_teacher, temperature, kl_type)
+    low_top_loss = b_t * kl_div(
+        log_p1_student, log_p1_teacher,
+        temperature, kl_type, reduction='none'
+    ).mean()
 
     # other classes loss
     log_p2_student = F.log_softmax(
@@ -73,30 +79,39 @@ def gdkd_loss(logits_student, logits_teacher, target, k, strategy, w0, w1, w2, t
         soft_logits_teacher - MASK_MAGNITUDE * mask_u1, dim=1
     )
 
-    low_other_loss = kl_div(
-        log_p2_student, log_p2_teacher, temperature, kl_type)
+    low_other_loss = b_o * kl_div(
+        log_p2_student, log_p2_teacher,
+        temperature, kl_type, reduction='none'
+    ).mean()
 
     return (
-        w0 * high_loss + w1 * low_top_loss + w2 * low_other_loss,
+        high_loss + low_top_loss + m*low_other_loss,
         high_loss.detach(),
         low_top_loss.detach(),
-        low_other_loss.detach()
+        low_other_loss.detach(),
+        b_t.mean().detach(),
+        b_o.mean().detach()
     )
 
 
-class GDKD(Distiller):
-    def __init__(self, student, teacher, cfg):
-        super(GDKD, self).__init__(student, teacher)
-        self.ce_loss_weight = cfg.GDKD.CE_WEIGHT
+class GDKDAutoW(Distiller):
+    """
+        GDKD with one weight m:
+        loss = high_loss + b_t * low_top_loss + m * b_o * low_other_loss
+    """
 
-        self.w0 = cfg.GDKD.W0
-        self.w1 = cfg.GDKD.W1
-        self.w2 = cfg.GDKD.W2
-        self.temperature = cfg.GDKD.T
-        self.warmup = cfg.GDKD.WARMUP
-        self.k = cfg.GDKD.TOPK
-        self.strategy = cfg.GDKD.STRATEGY
-        self.kl_type = cfg.GDKD.KL_TYPE
+    def __init__(self, student, teacher, cfg):
+        super(GDKDAutoW, self).__init__(student, teacher)
+        self.ce_loss_weight = cfg.GDKDAutoW.CE_WEIGHT
+
+        self.m = cfg.GDKDAutoW.M
+        self.temperature = cfg.GDKDAutoW.T
+        self.warmup = cfg.GDKDAutoW.WARMUP
+        self.k = cfg.GDKDAutoW.TOPK
+        self.strategy = cfg.GDKDAutoW.STRATEGY
+        self.kl_type = cfg.GDKDAutoW.KL_TYPE
+
+        assert self.kl_type == "forward"
 
     def forward_train(self, image, target, **kwargs):
         logits_student, _ = self.student(image)
@@ -105,7 +120,8 @@ class GDKD(Distiller):
 
         # losses
         loss_ce = self.ce_loss_weight * F.cross_entropy(logits_student, target)
-        loss_dkd, self.high_loss, self.low_top_loss, self.low_other_loss = gdkd_loss(
+        (loss_dkd, self.high_loss, self.low_top_loss, self.low_other_loss,
+         self.b_t, self.b_o) = gdkd_loss(
             logits_student,
             logits_teacher,
             target,
@@ -129,4 +145,6 @@ class GDKD(Distiller):
             "high_loss": self.high_loss,
             "low_top_loss": self.low_top_loss,
             "low_other_loss": self.low_other_loss,
+            "b_t": self.b_t,
+            "b_o": self.b_o,
         }
