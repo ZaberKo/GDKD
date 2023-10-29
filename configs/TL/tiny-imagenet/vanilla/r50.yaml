@@ -4,7 +4,7 @@ EXPERIMENT:
   PROJECT: "transfer_baselines"
 DATASET:
   TYPE: "tiny-imagenet"
-  ENHANCE_AUGMENT: true
+  # ENHANCE_AUGMENT: true
   NUM_WORKERS: 4
   TEST:
     BATCH_SIZE: 128
