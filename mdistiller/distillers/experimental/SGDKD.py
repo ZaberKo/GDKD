@@ -2,13 +2,15 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from ._base import Distiller
-from .utils import kl_div
+from .._base import Distiller
+from ..utils import kl_div
 
 MASK_MAGNITUDE = 1000.0
 
 
 def get_masks(logits, target, eta=0.1):
+    # splits to 3 parts: target, other, ignore
+
     # NOTE: masks are calculated in cuda
     mask_u0 = torch.zeros_like(logits, dtype=torch.bool).scatter_(
         1, target.unsqueeze(1), 1)
@@ -16,11 +18,13 @@ def get_masks(logits, target, eta=0.1):
     mask_u1 = torch.rand_like(logits) < eta
     mask_u2 = torch.logical_not(mask_u1)
 
+    num_classes = logits.shape[-1]
+
     # make sure mask_u1 has at least one element
-    rand_u2 = torch.randint_like(target, logits.shape[1])
+    rand_u2 = torch.randint_like(target, num_classes)
     rand_mask = rand_u2 == target
-    # if rand_u2[i] = target[i]; then rand_u2[i]+=1
-    rand_u2 = (rand_u2 + rand_mask.to(dtype=rand_u2.dtype)) % logits.shape[1]
+    # if rand_u2[i] = target[i]; then rand_u2[i]+=1#
+    rand_u2 = (rand_u2 + rand_mask.to(dtype=rand_u2.dtype)) % num_classes
     rand_u2 = rand_u2.unsqueeze(1)
 
     mask_u1.scatter_(1, rand_u2, False)
@@ -63,7 +67,7 @@ def gdkd_loss(logits_student, logits_teacher, target, eta, w0, w1, temperature, 
         * (temperature**2)
     )
 
-    # topk loss
+    # low loss
     log_p1_student = F.log_softmax(
         soft_logits_student - MASK_MAGNITUDE * ~mask_u1, dim=1
     )
@@ -81,6 +85,10 @@ def gdkd_loss(logits_student, logits_teacher, target, eta, w0, w1, temperature, 
 
 
 class SGDKD(Distiller):
+    """
+        Stocastic GDKD with 3 splits: target, other, ignore.
+        low_ignore_loss is not used.
+    """
     def __init__(self, student, teacher, cfg):
         super(SGDKD, self).__init__(student, teacher)
         self.ce_weight = cfg.SGDKD.CE_WEIGHT

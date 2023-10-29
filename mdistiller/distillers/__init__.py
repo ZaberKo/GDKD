@@ -13,10 +13,7 @@ from .VID import VID
 from .ReviewKD import ReviewKD
 from .DKD import DKD
 from .GDKD import GDKD
-from .SGDKD import SGDKD
-from .ADKD import ADKD
 from .DKDMod import DKDMod
-from .GDKDAutok import GDKDAutok
 from .DIST import DIST
 
 from ..models import get_model
@@ -36,17 +33,15 @@ distiller_dict = {
     "VID": VID,
     "REVIEWKD": ReviewKD,
     "DKD": DKD,
-    "GDKD": GDKD,
-    "SGDKD": SGDKD,
-    "ADKD": ADKD,
     "DKDMod": DKDMod,
-    "GDKDAutok": GDKDAutok,
+    "GDKD": GDKD,
     "DIST": DIST
 }
 
+
 def get_distiller(cfg, **kwargs):
     model_student = get_model(cfg, cfg.DISTILLER.STUDENT, pretrained=False)
-    
+
     if cfg.DISTILLER.TYPE == "NONE":
         distiller = Vanilla(model_student)
     else:

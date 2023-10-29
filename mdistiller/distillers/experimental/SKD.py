@@ -2,8 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from ._base import Distiller
-from .utils import kl_div
+from .._base import Distiller
+from ..utils import kl_div
 
 MASK_MAGNITUDE = 1000.0
 

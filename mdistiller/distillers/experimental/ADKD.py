@@ -4,8 +4,8 @@ import torch.nn.functional as F
 
 import numpy as np
 
-from ._base import Distiller
-from .utils import kl_div, validate
+from .._base import Distiller
+from ..utils import kl_div, validate
 
 from mdistiller.dataset import get_dataset
 
@@ -127,7 +127,8 @@ def prebuild_beta(teacher, cfg, T=4.0, preload_path=None):
 
 class ADKD(Distiller):
     """
-        Auto adjust beta in DKD
+        DKD with auto adjusted beta.
+        beta = 
     """
     def __init__(self, student, teacher, cfg):
         super(ADKD, self).__init__(student, teacher)
