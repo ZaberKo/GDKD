@@ -1,7 +1,7 @@
 EXPERIMENT:
   NAME: ""
   TAG: "gdkd-autok,res32x4,res8x4"
-  PROJECT: "cifar100_baselines"
+  PROJECT: "cifar100_baselines_experimental"
 DISTILLER:
   TYPE: "GDKDAutok"
   TEACHER: "resnet32x4"

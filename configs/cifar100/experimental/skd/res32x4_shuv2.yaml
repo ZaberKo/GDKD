@@ -1,7 +1,7 @@
 EXPERIMENT:
   NAME: ""
   TAG: "SKD,res32x4,shuv2"
-  PROJECT: "cifar100_baselines"
+  PROJECT: "cifar100_baselines_experimental"
 DISTILLER:
   TYPE: "SKD"
   TEACHER: "resnet32x4"

@@ -1,7 +1,7 @@
 EXPERIMENT:
   NAME: ""
   TAG: "sgdkd,wrn_40_2,wrn_16_2"
-  PROJECT: "cifar100_baselines"
+  PROJECT: "cifar100_baselines_experimental"
 DISTILLER:
   TYPE: "SGDKD"
   TEACHER: "wrn_40_2"

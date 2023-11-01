@@ -1,7 +1,7 @@
 EXPERIMENT:
   NAME: ""
   TAG: "adkd,res50,mv2"
-  PROJECT: "cifar100_baselines"
+  PROJECT: "cifar100_baselines_experimental"
 DISTILLER:
   TYPE: "ADKD"
   TEACHER: "ResNet50"
