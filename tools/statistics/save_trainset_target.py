@@ -4,7 +4,7 @@ import argparse
 from mdistiller.engine.cfg import CFG as cfg
 from mdistiller.engine.cfg import show_cfg
 
-from .utils import get_dataset
+from .datasets import get_dataset
 
 from tqdm import tqdm
 

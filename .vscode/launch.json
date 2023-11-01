@@ -32,25 +32,27 @@
             ]
         },
         {
-            "name": "logits_dist",
+            "name": "eval_logits",
             "type": "python",
             "request": "launch",
-            "module": "tools.statistics.calc_imagenet_teacher_logits",
+            "module": "tools.statistics.eval_model_logits",
             "justMyCode": true,
             "args": [
                 "--dataset",
                 "cifar100_aug",
                 "--model",
-                "resnet32x4",
+                "MobileNetV2",
+                "--model-path",
+                "output/cifar100_baselines_ckpt/dkdmod,vgg13,mv2,aug/student_best"
             ]
         },
-        {
-            "name": "logits_grad",
-            "type": "python",
-            "request": "launch",
-            "module": "exp.calc_dataset_logits_grad_dist",
-            "justMyCode": true,
-        },
+        // {
+        //     "name": "logits_grad",
+        //     "type": "python",
+        //     "request": "launch",
+        //     "module": "exp.calc_dataset_logits_grad_dist",
+        //     "justMyCode": true,
+        // },
         {
             "name": "Train ddp",
             "type": "python",

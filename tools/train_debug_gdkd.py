@@ -14,7 +14,7 @@ from datetime import datetime
 
 from tqdm import tqdm
 
-from .statistics.utils import get_dataset
+from .statistics.datasets import get_dataset
 from .debug.GDKD_debug import GDKD
 
 cudnn.benchmark = True
