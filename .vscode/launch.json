@@ -166,6 +166,36 @@
             ]
         },
         {
+            "name": "Train (experimental)",
+            "type": "python",
+            "request": "launch",
+            // "program": "tools/train.py",
+            "module": "tools.train",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "args": [
+                "--cfg",
+                "configs/cifar100/reviewkd.yaml",
+                // "--teacher",
+                // "ResNet50",
+                // "vgg13",
+                // "--student",
+                // "MobileNetV2",
+                // "vgg8",
+                "DATASET.ENHANCE_AUGMENT",
+                "False",
+                "LOG.WANDB",
+                "False",
+                // "ADKD.KL_TYPE",
+                // "both",
+                // "LOG.ENABLE_PROGRESS_BAR",
+                // "False"
+            ],
+            "env": {
+                "KD_EXPERIMENTAL": "1"
+            }
+        },
+        {
             "name": "Train debug",
             "type": "python",
             "request": "launch",

@@ -140,6 +140,10 @@ if __name__ == "__main__":
     parser.add_argument("opts", nargs="*")
 
     args = parser.parse_args()
+
+    if os.environ.get("KD_EXPERIMENTAL", "0") == "1":
+        import mdistiller.distillers.experimental as experimental
+
     setup_cfg(args)
 
     main(cfg, args.resume, args.opts, group_flag=args.group, id=args.id)
