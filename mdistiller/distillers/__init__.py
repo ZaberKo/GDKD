@@ -16,8 +16,6 @@ from .DKDMod import DKDMod
 from .GDKD import GDKD
 from .DIST import DIST
 
-from .GDKDAutoW import GDKDAutoW
-
 from ..models import get_model
 
 distiller_dict = {
@@ -38,7 +36,6 @@ distiller_dict = {
     "DKDMod": DKDMod,
     "GDKD": GDKD,
     "DIST": DIST,
-    "GDKDAutoW": GDKDAutoW
 }
 
 

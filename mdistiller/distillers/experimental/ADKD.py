@@ -128,7 +128,7 @@ def prebuild_beta(teacher, cfg, T=4.0, preload_path=None):
 class ADKD(Distiller):
     """
         DKD with auto adjusted beta.
-        beta = 
+        beta = (max_prob/2nd_prob).mean()
     """
     def __init__(self, student, teacher, cfg):
         super(ADKD, self).__init__(student, teacher)

@@ -6,6 +6,7 @@ from .SGDKD import SGDKD
 from .ADKD import ADKD
 from .GDKDAutok import GDKDAutok
 from .GDKD_perclass_k import GDKDPerClassK
+from .GDKDAutoW import GDKDAutoW, GDKDAutoW1
 
 from mdistiller.distillers import distiller_dict
 
@@ -14,7 +15,9 @@ distiller_dict.update({
     "ADKD": ADKD,
     "SKD": SKD,
     "GDKDAutok": GDKDAutok,
-    "GDKDPerClassK": GDKDPerClassK
+    "GDKDPerClassK": GDKDPerClassK,
+    "GDKDAutoW": GDKDAutoW,
+    "GDKDAutoW1": GDKDAutoW1,
 })
 
 
@@ -66,3 +69,21 @@ CFG.GDKDPerClassK.PRELOAD_TOPK_PATH = None # eg: "./debug_topk.yaml"
 CFG.GDKDPerClassK.KL_TYPE = "forward"
 CFG.GDKDPerClassK.T = 4.0
 CFG.GDKDPerClassK.WARMUP = 20
+
+CFG.GDKDAutoW = CN()
+CFG.GDKDAutoW.CE_WEIGHT = 1.0
+CFG.GDKDAutoW.M = 12.0
+CFG.GDKDAutoW.TOPK = 5
+CFG.GDKDAutoW.STRATEGY = "best" # or "worst"
+CFG.GDKDAutoW.KL_TYPE = "forward"
+CFG.GDKDAutoW.T = 4.0
+CFG.GDKDAutoW.WARMUP = 20
+
+CFG.GDKDAutoW1 = CN()
+CFG.GDKDAutoW1.CE_WEIGHT = 1.0
+CFG.GDKDAutoW1.W2 = 8.0
+CFG.GDKDAutoW1.TOPK = 5
+CFG.GDKDAutoW1.STRATEGY = "best" # or "worst"
+CFG.GDKDAutoW1.KL_TYPE = "forward"
+CFG.GDKDAutoW1.T = 4.0
+CFG.GDKDAutoW1.WARMUP = 20

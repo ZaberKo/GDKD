@@ -24,6 +24,7 @@ if __name__ == "__main__":
     parser.add_argument("--suffix", type=str, nargs="?", default="", const="")
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--data_workers", type=int, default=None)
+    parser.add_argument("--wandb_model_log", action="store_true")
     parser.add_argument("opts", nargs="*")
 
     args = parser.parse_args()
@@ -51,6 +52,8 @@ if __name__ == "__main__":
         cmds.append(args.suffix)
     if args.resume:
         cmds.append("--resume")
+    if args.wandb_model_log:
+        cmds.append("--wandb_model_log")
     cmds.extend(args.opts)
 
     executor = ProcessPoolExecutor(args.num_tests)
