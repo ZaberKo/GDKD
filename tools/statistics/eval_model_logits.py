@@ -34,7 +34,7 @@ def accuracy(output, target, topk=(1,)):
     return correct_flags_list
 
 
-def validate(dataloader, model, num_classes):
+def validate_by_category(dataloader, model, num_classes):
     model.eval()
 
     logits_dict = defaultdict(list)
@@ -81,11 +81,63 @@ def validate(dataloader, model, num_classes):
 
     return res_logits, res_feats
 
+def validate(dataloader, model, num_classes):
+    model.eval()
 
-def get_filename(cfg, args, name):
+    logits_arr = []
+    feats_arr = []
+    labels_arr = []
+    correct_dict = defaultdict(list)
+
+    pbar = tqdm(total=len(dataloader))
+    with torch.no_grad():
+        for i, data in enumerate(dataloader):
+            image, target = data[:2]
+            image = image.float()
+            image = image.cuda(non_blocking=True)
+            # target = target.cuda(non_blocking=True)
+            logits, feats = model(image)
+            logits = logits.cpu()
+            pooled_feat = feats['pooled_feat'].cpu()
+
+            correct_flags, = accuracy(logits, target, topk=(1,))
+
+            logits_arr.append(logits)
+            feats_arr.append(pooled_feat)
+            labels_arr.append(target)
+
+            for j in range(num_classes):
+                correct_dict[j].append(correct_flags[target == j])
+
+            pbar.update()
+    pbar.close()
+
+    for i in range(num_classes):
+        correct_dict[i] = torch.cat(correct_dict[i]).to(dtype=torch.float32)
+
+    for i in range(num_classes):
+        acc = torch.mean(correct_dict[i])
+        print(f"Class {i} accuracy: {acc:.4f}")
+
+    currect_tuple = tuple(correct_dict.values())
+    acc = torch.mean(torch.cat(currect_tuple))
+    print(f"Total accuracy: {acc:.4f}")
+
+    
+
+    res=dict(
+        logits=torch.cat(logits_arr).numpy(),
+        feats=torch.cat(feats_arr).numpy(),
+        labels=torch.cat(labels_arr).numpy()
+    )
+
+    return res
+
+
+def get_filename(cfg, args):
     model_name = cfg.DISTILLER.TEACHER
 
-    filename = f'{cfg.DATASET.TYPE}_{model_name}_{name}'
+    filename = f'{cfg.DATASET.TYPE}_{model_name}'
 
     if args.save_prefix:
         filename = f"{args.save_prefix}_{filename}"
@@ -125,19 +177,15 @@ def main(cfg, args):
 
     model.cuda()
 
-    logits_dict, feats_dict = validate(dataloader, model, num_classes)
-
-
+    res = validate(dataloader, model, num_classes)
 
     path = Path(args.save_dir).expanduser()
     if not path.exists():
         path.mkdir(parents=True)
 
-    logits_filename = get_filename(cfg, args, "logits")
-    feats_filename = get_filename(cfg, args, "feats")
-
-    np.savez(path/logits_filename, **logits_dict)
-    np.savez(path/feats_filename, **feats_dict)
+    np.savez_compressed(
+        path / get_filename(cfg, args),
+        **res)
 
 
 if __name__ == "__main__":
