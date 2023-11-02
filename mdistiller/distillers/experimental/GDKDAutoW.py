@@ -69,7 +69,8 @@ def gdkd_loss_autow(logits_student, logits_teacher, target, k, strategy, m, temp
     low_top_loss = b_t * kl_div(
         log_p1_student, log_p1_teacher,
         temperature, kl_type, reduction='none'
-    ).mean()
+    )
+    low_top_loss = low_top_loss.mean()
 
     # other classes loss
     log_p2_student = F.log_softmax(
@@ -82,7 +83,8 @@ def gdkd_loss_autow(logits_student, logits_teacher, target, k, strategy, m, temp
     low_other_loss = b_o * kl_div(
         log_p2_student, log_p2_teacher,
         temperature, kl_type, reduction='none'
-    ).mean()
+    )
+    low_other_loss = low_other_loss.mean()
 
     return (
         high_loss + low_top_loss + m*low_other_loss,
@@ -148,7 +150,6 @@ class GDKDAutoW(Distiller):
         }
 
 
-
 def gdkd_loss_autow1(logits_student, logits_teacher, target, k, strategy, w2, temperature, kl_type):
     mask_u1, mask_u2 = get_masks(logits_teacher, k, strategy)
 
@@ -183,7 +184,8 @@ def gdkd_loss_autow1(logits_student, logits_teacher, target, k, strategy, w2, te
     low_top_loss = b_t * kl_div(
         log_p1_student, log_p1_teacher,
         temperature, kl_type, reduction='none'
-    ).mean()
+    )
+    low_top_loss = low_top_loss.mean()
 
     # other classes loss
     log_p2_student = F.log_softmax(
@@ -199,12 +201,13 @@ def gdkd_loss_autow1(logits_student, logits_teacher, target, k, strategy, w2, te
     )
 
     return (
-        high_loss + low_top_loss + w2 *low_other_loss,
+        high_loss + low_top_loss + w2 * low_other_loss,
         high_loss.detach(),
         low_top_loss.detach(),
         low_other_loss.detach(),
         b_t.mean().detach()
     )
+
 
 class GDKDAutoW1(Distiller):
     """
