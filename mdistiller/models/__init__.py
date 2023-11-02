@@ -27,14 +27,20 @@ transfer_learning_datasets = ["tiny-imagenet", "cub2011", "dtd", "food101"]
 
 
 def get_model(cfg, name, pretrained=False):
+    # aug: if True, load the model weights from data_aug training
+    aug = False
+    if pretrained:
+        aug = cfg.DISTILLER.AUG_TEACHER
+
     if cfg.DATASET.TYPE == "cifar100":
         model = get_cifar100_model(
-            name, pretrained=pretrained, aug=cfg.DATASET.ENHANCE_AUGMENT)
+            name, pretrained=pretrained, aug=aug)
     elif cfg.DATASET.TYPE == "imagenet":
+        # currently aug imagenet models are not provided
         model = get_imagenet_model(name, pretrained=pretrained)
     elif cfg.DATASET.TYPE in transfer_learning_datasets:
         model = get_imagenet_pretrained_model(
-            name, cfg.DATASET.TYPE, pretrained=pretrained)
+            name, cfg.DATASET.TYPE, pretrained=pretrained, aug=aug)
     else:
         raise NotImplementedError
 

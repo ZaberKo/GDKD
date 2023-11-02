@@ -35,6 +35,25 @@ model_weights_dict = {
     }
 }
 
+aug_model_weights_dict = {
+    "tiny-imagenet": {
+        "ResNet34": tiny_imagenet_model_dir/"resnet34/student_100_aug.pth",
+        "ResNet50": tiny_imagenet_model_dir/"resnet50/student_100_aug.pth",
+    },
+    "cub2011": {
+        "ResNet34": cub2011_model_dir/"resnet34/student_100_aug.pth",
+        "ResNet50": cub2011_model_dir/"resnet50/student_100_aug.pth",
+    },
+    "dtd": {
+        "ResNet34": dtd_model_dir/"resnet34/student_100_aug.pth",
+        "ResNet50": dtd_model_dir/"resnet50/student_100_aug.pth",
+    },
+    "food101": {
+        "ResNet34": food101_model_dir/"resnet34/student_100_aug.pth",
+        "ResNet50": food101_model_dir/"resnet50/student_100_aug.pth",
+    }
+}
+
 dataset_num_classes_dict = {
     "tiny-imagenet": 200,
     "cub2011": 200,
@@ -43,7 +62,7 @@ dataset_num_classes_dict = {
 }
 
 
-def get_imagenet_pretrained_model(name: str, dataset: str, pretrained: bool = False):
+def get_imagenet_pretrained_model(name: str, dataset: str, pretrained: bool = False, aug: bool = False):
     """
         pretrained: if True, load the pretrained weights from the model_weights_dict;
                     if False, load the model with ImageNet-pretrained weights.
@@ -52,10 +71,15 @@ def get_imagenet_pretrained_model(name: str, dataset: str, pretrained: bool = Fa
     if pretrained:
         model = get_imagenet_model(
             name, pretrained=False, num_classes=num_classes)
-        model.load_state_dict(load_checkpoint(
-            model_weights_dict[dataset][name]))
+
+        if aug:
+            model.load_state_dict(load_checkpoint(
+                aug_model_weights_dict[dataset][name]))
+        else:
+            model.load_state_dict(load_checkpoint(
+                model_weights_dict[dataset][name]))
     else:
         model = get_imagenet_model(
             name, pretrained=True, num_classes=num_classes)
-        
+
     return model

@@ -87,6 +87,11 @@ def get_cifar100_model(name, pretrained=False, aug=True):
     if pretrained:
         # teacher
         if aug:
+            if name not in cifar100_aug_model_weights_dict:
+                raise NotImplementedError(
+                    f"no pretrained model with data aug for teacher {name}"
+                )
+
             pretrained_model_path = cifar100_aug_model_weights_dict[name]
 
         assert (
