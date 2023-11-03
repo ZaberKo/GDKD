@@ -175,21 +175,9 @@
             "justMyCode": false,
             "args": [
                 "--cfg",
-                "configs/cifar100/reviewkd.yaml",
-                // "--teacher",
-                // "ResNet50",
-                // "vgg13",
-                // "--student",
-                // "MobileNetV2",
-                // "vgg8",
-                "DATASET.ENHANCE_AUGMENT",
-                "False",
+                "configs/cifar100/experimental/gdkd_autow/res32x4_res8x4.yaml",
                 "LOG.WANDB",
                 "False",
-                // "ADKD.KL_TYPE",
-                // "both",
-                // "LOG.ENABLE_PROGRESS_BAR",
-                // "False"
             ],
             "env": {
                 "KD_EXPERIMENTAL": "1"

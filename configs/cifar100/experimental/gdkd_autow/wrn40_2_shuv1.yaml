@@ -1,6 +1,6 @@
 EXPERIMENT:
   NAME: ""
-  TAG: "gdkd-autok,wrn_40_2,shuv1"
+  TAG: "gdkd-autow,wrn_40_2,shuv1"
   PROJECT: "cifar100_baselines_experimental"
 DISTILLER:
   TYPE: "GDKDAutoW"
