@@ -72,7 +72,8 @@ CFG.GDKDPerClassK.WARMUP = 20
 
 CFG.GDKDAutoW = CN()
 CFG.GDKDAutoW.CE_WEIGHT = 1.0
-CFG.GDKDAutoW.M = 12.0
+CFG.GDKDAutoW.M1 = 1.0
+CFG.GDKDAutoW.M2 = 12.0
 CFG.GDKDAutoW.TOPK = 5
 CFG.GDKDAutoW.STRATEGY = "best" # or "worst"
 CFG.GDKDAutoW.KL_TYPE = "forward"

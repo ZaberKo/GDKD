@@ -130,7 +130,8 @@ class GDKDAutoW(Distiller):
             target,
             self.k,
             self.strategy,
-            self.m,
+            self.m1,
+            self.m2,
             self.temperature,
             kl_type=self.kl_type
         )
