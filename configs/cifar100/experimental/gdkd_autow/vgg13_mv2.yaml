@@ -16,4 +16,4 @@ SOLVER:
   MOMENTUM: 0.9
   TYPE: "SGD"
 GDKDAutoW:
-  M: 9.0
+  M2: 9.0

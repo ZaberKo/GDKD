@@ -35,7 +35,7 @@ def cat_mask(t, mask1, mask2):
     return rt
 
 
-def gdkd_loss_autow(logits_student, logits_teacher, target, k, strategy, m, temperature, kl_type):
+def gdkd_loss_autow(logits_student, logits_teacher, target, k, strategy, m1, m2, temperature, kl_type):
     mask_u1, mask_u2 = get_masks(logits_teacher, k, strategy)
 
     soft_logits_student = logits_student / temperature
@@ -87,7 +87,7 @@ def gdkd_loss_autow(logits_student, logits_teacher, target, k, strategy, m, temp
     low_other_loss = low_other_loss.mean()
 
     return (
-        high_loss + low_top_loss + m*low_other_loss,
+        high_loss + m1*low_top_loss + m2*low_other_loss,
         high_loss.detach(),
         low_top_loss.detach(),
         low_other_loss.detach(),
@@ -106,7 +106,8 @@ class GDKDAutoW(Distiller):
         super(GDKDAutoW, self).__init__(student, teacher)
         self.ce_loss_weight = cfg.GDKDAutoW.CE_WEIGHT
 
-        self.m = cfg.GDKDAutoW.M
+        self.m1 = cfg.GDKDAutoW.M1
+        self.m2 = cfg.GDKDAutoW.M2
         self.temperature = cfg.GDKDAutoW.T
         self.warmup = cfg.GDKDAutoW.WARMUP
         self.k = cfg.GDKDAutoW.TOPK
