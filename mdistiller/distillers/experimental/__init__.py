@@ -8,6 +8,7 @@ from .GDKDAutok import GDKDAutok
 from .GDKD_perclass_k import GDKDPerClassK
 from .GDKDAutoW import GDKDAutoW, GDKDAutoW1
 from .ReviewKD_GDKD import ReviewKD_GDKD
+from .DIST_GDKD import DIST_GDKD
 
 from mdistiller.distillers import distiller_dict
 
@@ -19,7 +20,8 @@ distiller_dict.update({
     "GDKDPerClassK": GDKDPerClassK,
     "GDKDAutoW": GDKDAutoW,
     "GDKDAutoW1": GDKDAutoW1,
-    "REVIEWKD_GDKD": ReviewKD_GDKD
+    "REVIEWKD_GDKD": ReviewKD_GDKD,
+    "DIST_GDKD": DIST_GDKD
 })
 
 

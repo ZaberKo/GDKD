@@ -55,7 +55,7 @@ class ReviewKD_GDKD(ReviewKD):
             * loss_reviewkd
         )
 
-        loss_dkd, self.high_loss, self.low_top_loss, self.low_other_loss = gdkd_loss(
+        loss_gdkd, self.high_loss, self.low_top_loss, self.low_other_loss = gdkd_loss(
             logits_student,
             logits_teacher,
             target,
@@ -68,12 +68,12 @@ class ReviewKD_GDKD(ReviewKD):
             kl_type="forward"
         )
 
-        loss_dkd = min(kwargs["epoch"] / self.gdkd_warmup_epochs, 1.0) * loss_dkd
+        loss_gdkd = min(kwargs["epoch"] / self.gdkd_warmup_epochs, 1.0) * loss_gdkd
 
 
         losses_dict = {
             "loss_ce": loss_ce,
-            "loss_kd": loss_reviewkd+loss_dkd,
+            "loss_kd": loss_reviewkd+loss_gdkd,
         }
         return logits_student, losses_dict
 

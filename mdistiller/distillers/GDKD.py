@@ -105,7 +105,7 @@ class GDKD(Distiller):
 
         # losses
         loss_ce = self.ce_loss_weight * F.cross_entropy(logits_student, target)
-        loss_dkd, self.high_loss, self.low_top_loss, self.low_other_loss = gdkd_loss(
+        loss_gdkd, self.high_loss, self.low_top_loss, self.low_other_loss = gdkd_loss(
             logits_student,
             logits_teacher,
             target,
@@ -117,7 +117,7 @@ class GDKD(Distiller):
             self.temperature,
             kl_type=self.kl_type
         )
-        loss_kd = min(kwargs["epoch"] / self.warmup, 1.0) * loss_dkd
+        loss_kd = min(kwargs["epoch"] / self.warmup, 1.0) * loss_gdkd
         losses_dict = {
             "loss_ce": loss_ce,
             "loss_kd": loss_kd,
