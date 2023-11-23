@@ -45,13 +45,15 @@ class ReviewKD_GDKD(ReviewKD):
         ]
         # losses
         loss_ce = self.ce_loss_weight * F.cross_entropy(logits_student, target)
+
+        loss_reviewkd = hcl_loss(results, features_teacher)
+        self.reviewkd_loss = loss_reviewkd.detach()
+
         loss_reviewkd = (
             self.reviewkd_loss_weight
             * min(kwargs["epoch"] / self.warmup_epochs, 1.0)
-            * hcl_loss(results, features_teacher)
+            * loss_reviewkd
         )
-
-        self.reviewkd_loss = loss_reviewkd.detach()
 
         loss_dkd, self.high_loss, self.low_top_loss, self.low_other_loss = gdkd_loss(
             logits_student,
@@ -65,6 +67,8 @@ class ReviewKD_GDKD(ReviewKD):
             self.temperature,
             kl_type="forward"
         )
+
+        loss_dkd = min(kwargs["epoch"] / self.gdkd_warmup_epochs, 1.0) * loss_dkd
 
 
         losses_dict = {

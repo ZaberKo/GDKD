@@ -1,7 +1,7 @@
 EXPERIMENT:
   NAME: ""
   TAG: "reviewkd_gdkd,res32x4,res8x4"
-  PROJECT: "cifar100_baselines"
+  PROJECT: "cifar100_baselines_experimental"
 DISTILLER:
   TYPE:  "REVIEWKD_GDKD"
   TEACHER: "resnet32x4"
@@ -15,4 +15,6 @@ SOLVER:
   WEIGHT_DECAY: 0.0005
   MOMENTUM: 0.9
   TYPE: "SGD"
-
+GDKD:
+  W1: 2.0
+  W2: 8.0

@@ -1,7 +1,7 @@
 EXPERIMENT:
   NAME: ""
   TAG: "reviewkd_gdkd,res50,mv2"
-  PROJECT: "cifar100_baselines"
+  PROJECT: "cifar100_baselines_experimental"
 DISTILLER:
   TYPE:  "REVIEWKD_GDKD"
   TEACHER: "ResNet50"
@@ -20,3 +20,6 @@ REVIEWKD:
   OUT_SHAPES: [1, 4, 8, 16, 32]
   IN_CHANNELS: [12, 16, 48, 160, 1280]
   OUT_CHANNELS: [256, 512, 1024, 2048, 2048]
+GDKD:
+  W1: 1.0
+  W2: 8.0
