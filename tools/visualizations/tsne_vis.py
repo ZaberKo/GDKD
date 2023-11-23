@@ -87,7 +87,7 @@ def get_tsne_arr(paths, num_classes=100, seed=None, fname='tsne.pdf'):
 
         plt.subplot(1, len(paths), i)
         plot_features_sns(reduced_all_features, labels, color_list)
-        plt.title(path.name.split('_')[0])
+        plt.title(path.name.split('_')[0].upper())
     fig.tight_layout()
     plt.savefig(save_dir/fname)
     plt.show()

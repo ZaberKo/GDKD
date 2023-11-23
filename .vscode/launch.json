@@ -178,6 +178,7 @@
                 "configs/cifar100/experimental/gdkd_autow/res32x4_res8x4.yaml",
                 "LOG.WANDB",
                 "False",
+                "GDKDAutoW.M", "4.0"
             ],
             "env": {
                 "KD_EXPERIMENTAL": "1"

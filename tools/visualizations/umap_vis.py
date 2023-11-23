@@ -167,7 +167,7 @@ def get_umap_arr(paths, num_classes=100, seed=None, color_list=None, fname='umap
             if cnt <= len(opts):
                 plt.title(opt)
             if cnt%len(opts) == 1:
-                plt.ylabel(path.name.split('_')[0])
+                plt.ylabel(path.name.split('_')[0].upper())
 
             cnt+=1
 

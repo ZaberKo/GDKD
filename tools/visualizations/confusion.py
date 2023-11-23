@@ -80,7 +80,7 @@ def plot_arr(paths):
                         cbar=True, ax=ax, cbar_ax=axs[i], cbar_kws=dict(ticks=[]))
         ax.set_xticks([])
         ax.set_yticks([])
-        ax.set_title(path.name.split('_')[0])
+        ax.set_title(path.name.split('_')[0].upper())
 
     # axs[-1].set_ticks([])
 
