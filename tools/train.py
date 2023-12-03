@@ -80,6 +80,7 @@ def main(cfg, resume, opts, group_flag=False, id=""):
     # training
     experiment_name = experiment_name.replace("|", "_")
     experiment_name = experiment_name.replace(":", "=")
+    experiment_name = experiment_name.replace(" ", "")
 
     if group_flag:
         if id == "":
