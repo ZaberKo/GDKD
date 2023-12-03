@@ -78,6 +78,9 @@ def main(cfg, resume, opts, group_flag=False, id=""):
         distiller = torch.compile(distiller, mode="reduce-overhead")
 
     # training
+    experiment_name = experiment_name.replace("|", "_")
+    experiment_name = experiment_name.replace(":", "=")
+
     if group_flag:
         if id == "":
             id = "default"
