@@ -135,12 +135,15 @@ def validate(dataloader, model, num_classes):
 
 
 def get_filename(cfg, args):
-    model_name = cfg.DISTILLER.TEACHER
+    # model_name = cfg.DISTILLER.TEACHER
 
-    filename = f'{cfg.DATASET.TYPE}_{model_name}'
 
-    if args.save_prefix:
-        filename = f"{args.save_prefix}_{filename}"
+    # filename = f'{cfg.DATASET.TYPE}_{model_name}'
+
+    # if args.save_prefix:
+    #     filename = f"{args.save_prefix}_{filename}"
+
+    filename = f'{cfg.DATASET.TYPE}_{args.save_name}'
 
     if cfg.DATASET.ENHANCE_AUGMENT:
         filename += "_aug"
@@ -197,7 +200,8 @@ if __name__ == "__main__":
     parser.add_argument("--val-transform",
                         action="store_true", help="use val transform")
     parser.add_argument("--save-dir", type=str, default="exp/kd_logits_data")
-    parser.add_argument("--save-prefix", type=str)
+    # parser.add_argument("--save-prefix", type=str)
+    parser.add_argument("--save-name", type=str)
 
     args = parser.parse_args()
     if args.dataset == "imagenet":
