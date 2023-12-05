@@ -135,14 +135,6 @@ def validate(dataloader, model, num_classes):
 
 
 def get_filename(cfg, args):
-    # model_name = cfg.DISTILLER.TEACHER
-
-
-    # filename = f'{cfg.DATASET.TYPE}_{model_name}'
-
-    # if args.save_prefix:
-    #     filename = f"{args.save_prefix}_{filename}"
-
     filename = f'{cfg.DATASET.TYPE}_{args.save_name}'
 
     if cfg.DATASET.ENHANCE_AUGMENT:
@@ -193,18 +185,19 @@ def main(cfg, args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset", type=str, default="imagenet")
+    parser.add_argument("--dataset", type=str, default="imagenet", choices=['imagenet', 'cifar100', 'cifar100_aug', 'ti', 'cub2011'])
     parser.add_argument("--model", type=str, default="ResNet34")
     parser.add_argument("--model-path", type=str, default="")
     parser.add_argument("--train", action="store_true", help="use train set")
     parser.add_argument("--val-transform",
                         action="store_true", help="use val transform")
+    parser.add_argument("--config", type=str)
     parser.add_argument("--save-dir", type=str, default="exp/kd_logits_data")
     # parser.add_argument("--save-prefix", type=str)
     parser.add_argument("--save-name", type=str)
 
     args = parser.parse_args()
-    if args.dataset == "imagenet":
+    if args.dataset in ["imagenet", "ti", "cub2011"]:
         cfg_path = "tools/statistics/imagenet.yaml"
     elif args.dataset == "cifar100":
         cfg_path = "tools/statistics/cifar100.yaml"
@@ -213,10 +206,15 @@ if __name__ == "__main__":
     else:
         raise NotImplementedError(args.dataset)
 
+    if args.config is not None:
+        cfg.merge_from_other_cfg(Path(args.config).expanduser())
+
     cfg.merge_from_file(cfg_path)
     cfg.DISTILLER.TYPE = "NONE"
     cfg.DISTILLER.TEACHER = args.model
     # cfg.merge_from_list(args.opts)
+    if args.dataset in ["ti", "cub2011"]:
+        cfg.DATASET.TYPE = args.dataset
 
     cfg.freeze()
     main(cfg, args)

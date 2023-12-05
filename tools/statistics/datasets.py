@@ -5,19 +5,35 @@ from torchvision.datasets import ImageFolder
 import os
 
 from mdistiller.dataset.cifar100 import (
-    get_data_folder,
+    get_data_folder as get_cifar100_data_folder,
     get_cifar100_train_transform,
     get_cifar100_train_transform_with_autoaugment,
     get_cifar100_test_transform,
     CIFAR100Instance,
 )
 from mdistiller.dataset.imagenet import (
-    data_folder,
+    data_folder as imagenet_data_folder,
     get_imagenet_train_transform,
     get_imagenet_train_transform_strong_aug,
     get_imagenet_test_transform,
     ImageNet,
     get_imagenet_val_loader
+)
+from mdistiller.dataset.tiny_imaganet import (
+    data_folder as tiny_imagenet_data_folder,
+    get_tiny_imagenet_train_transform,
+    get_tiny_imagenet_train_transform_strong_aug,
+    get_tiny_imagenet_test_transform,
+    TinyImageNet,
+    get_tiny_imagenet_val_loader,
+)
+from mdistiller.dataset.cub2011 import (
+    data_folder as cub2011_data_folder,
+    get_cub2011_train_transform,
+    get_cub2011_train_transform_strong_aug,
+    get_cub2011_test_transform,
+    CUB2011,
+    get_cub2011_val_loader,
 )
 
 """
@@ -27,7 +43,7 @@ from mdistiller.dataset.imagenet import (
 
 
 def get_cifar100_dataloaders(train: bool, batch_size, num_workers, use_val_transform, enhance_augment=False):
-    data_folder = get_data_folder()
+    data_folder = get_cifar100_data_folder()
 
     if train:
         if use_val_transform:
@@ -61,9 +77,8 @@ def get_cifar100_dataloaders(train: bool, batch_size, num_workers, use_val_trans
 
 
 def get_imagenet_dataloaders(train: bool, batch_size,
-                             num_workers, use_val_transform,
+                             num_workers, use_val_transform=False,
                              enhance_augment=False):
-
     if train:
         if use_val_transform:
             train_transform = get_imagenet_test_transform()
@@ -72,7 +87,7 @@ def get_imagenet_dataloaders(train: bool, batch_size,
         else:
             train_transform = get_imagenet_train_transform()
 
-        train_folder = os.path.join(data_folder, 'train')
+        train_folder = os.path.join(imagenet_data_folder, 'train')
         train_set = ImageNet(train_folder, transform=train_transform)
 
         train_loader = torch.utils.data.DataLoader(
@@ -89,10 +104,67 @@ def get_imagenet_dataloaders(train: bool, batch_size,
         test_loader = get_imagenet_val_loader(
             batch_size, num_workers, is_distributed=False)
         return test_loader
+    
+def get_tiny_imagenet_dataloaders(train: bool, batch_size,
+                                num_workers, use_val_transform=False,
+                                enhance_augment=False):
+        if train:
+            if use_val_transform:
+                train_transform = get_tiny_imagenet_test_transform()
+            elif enhance_augment:
+                train_transform = get_tiny_imagenet_train_transform_strong_aug()
+            else:
+                train_transform = get_tiny_imagenet_train_transform()
+    
+            train_folder = os.path.join(tiny_imagenet_data_folder, 'train')
+            train_set = TinyImageNet(train_folder, transform=train_transform)
+    
+            train_loader = torch.utils.data.DataLoader(
+                train_set,
+                batch_size=batch_size,
+                shuffle=False,
+                num_workers=num_workers,
+                pin_memory=True,
+                drop_last=False,
+            )
+    
+            return train_loader
+        else:
+            test_loader = get_tiny_imagenet_val_loader(
+                batch_size, num_workers, is_distributed=False)
+            return test_loader
+
+def get_cub2011_dataloaders(train: bool, batch_size,
+                            num_workers, use_val_transform=False,
+                            enhance_augment=False):
+    if train:
+        if use_val_transform:
+            train_transform = get_cub2011_test_transform()
+        elif enhance_augment:
+            train_transform = get_cub2011_train_transform_strong_aug()
+        else:
+            train_transform = get_cub2011_train_transform()
+
+        train_folder = os.path.join(cub2011_data_folder, 'train')
+        train_set = CUB2011(train_folder, transform=train_transform)
+
+        train_loader = torch.utils.data.DataLoader(
+            train_set,
+            batch_size=batch_size,
+            shuffle=False,
+            num_workers=num_workers,
+            pin_memory=True,
+            drop_last=False,
+        )
+
+        return train_loader
+    else:
+        test_loader = get_cub2011_val_loader(
+            batch_size, num_workers, is_distributed=False)
+        return test_loader
 
 
 def get_dataset(cfg, train=False, use_val_transform=False):
-
     if cfg.DATASET.TYPE == "cifar100":
         dataloader = get_cifar100_dataloaders(
             train=train,
@@ -111,6 +183,24 @@ def get_dataset(cfg, train=False, use_val_transform=False):
             enhance_augment=cfg.DATASET.ENHANCE_AUGMENT,
         )
         num_classes = 1000
+    elif cfg.DATASET.TYPE == "tiny_imagenet":
+        dataloader = get_tiny_imagenet_dataloaders(
+            train=train,
+            batch_size=cfg.SOLVER.BATCH_SIZE,
+            num_workers=cfg.DATASET.NUM_WORKERS,
+            use_val_transform=use_val_transform,
+            enhance_augment=cfg.DATASET.ENHANCE_AUGMENT,
+        )
+        num_classes = 200
+    elif cfg.DATASET.TYPE == "cub2011":
+        dataloader = get_cub2011_dataloaders(
+            train=train,
+            batch_size=cfg.SOLVER.BATCH_SIZE,
+            num_workers=cfg.DATASET.NUM_WORKERS,
+            use_val_transform=use_val_transform,
+            enhance_augment=cfg.DATASET.ENHANCE_AUGMENT,
+        )
+        num_classes = 200
     else:
         raise NotImplementedError(cfg.DATASET.TYPE)
     return dataloader, num_classes
