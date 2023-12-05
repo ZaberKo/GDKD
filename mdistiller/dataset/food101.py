@@ -69,7 +69,7 @@ def get_food101_train_transform():
     return get_imagenet_train_transform()
 
 
-def get_food101_train_transform_with_strong_aug():
+def get_food101_train_transform_strong_aug():
     return get_imagenet_train_transform_strong_aug()
 
 
@@ -79,7 +79,7 @@ def get_food101_test_transform():
 
 def get_food101_dataloaders(batch_size, val_batch_size, k=-1, num_workers=4, is_distributed=False, enhance_augment=False):
     if enhance_augment:
-        train_transform = get_food101_train_transform_with_strong_aug()
+        train_transform = get_food101_train_transform_strong_aug()
     else:
         train_transform = get_food101_train_transform()
     train_set = Food101InstanceSample(
