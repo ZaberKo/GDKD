@@ -1,7 +1,7 @@
 import torch
 import torch.nn.functional as F
 
-from ..DIST import DIST, intra_class_relation
+from ..DIST import DIST, inter_class_relation, intra_class_relation
 from ..GDKD import GDKD, gdkd_loss
 
 class DIST_GDKD(DIST):
@@ -25,10 +25,11 @@ class DIST_GDKD(DIST):
 
         y_s = F.softmax(logits_student / self.temperature, dim=1)
         y_t = F.softmax(logits_teacher / self.temperature, dim=1)
+        loss_dist_inter = inter_class_relation(y_s, y_t) * (self.temperature**2)
         loss_dist_intra = intra_class_relation(y_s, y_t) * (self.temperature**2)
+        self.dist_inter_loss = loss_dist_inter.detach()
         self.dist_intra_loss = loss_dist_intra.detach()
-        loss_dist_intra = self.gamma * loss_dist_intra
-
+        
         loss_gdkd, self.high_loss, self.low_top_loss, self.low_other_loss = gdkd_loss(
             logits_student,
             logits_teacher,
@@ -46,12 +47,13 @@ class DIST_GDKD(DIST):
 
         losses_dict = {
             "loss_ce": loss_ce,
-            "loss_kd": loss_dist_intra+loss_gdkd,
+            "loss_kd": self.beta*loss_dist_inter+self.gamma*loss_dist_intra+loss_gdkd,
         }
         return logits_student, losses_dict
 
     def get_train_info(self):
         return {
+            "dist_inter_loss": self.dist_inter_loss,
             "dist_intra_loss": self.dist_intra_loss,
             "high_loss": self.high_loss,
             "low_top_loss": self.low_top_loss,
