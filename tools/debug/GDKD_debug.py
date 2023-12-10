@@ -54,10 +54,11 @@ def _loss_high(logits_student, logits_teacher, mask_u1, mask_u2, temperature):
 
     return high_loss
 
+
 def _loss_low_topk(logits_student, logits_teacher, mask_u1, mask_u2, temperature, kl_type):
     soft_logits_student = logits_student / temperature
     soft_logits_teacher = logits_teacher / temperature
-        # topk loss
+    # topk loss
     log_p1_student = F.log_softmax(
         soft_logits_student - MASK_MAGNITUDE * mask_u2, dim=1
     )
@@ -65,9 +66,11 @@ def _loss_low_topk(logits_student, logits_teacher, mask_u1, mask_u2, temperature
         soft_logits_teacher - MASK_MAGNITUDE * mask_u2, dim=1
     )
 
-    low_top_loss = kl_div(log_p1_student, log_p1_teacher, temperature, kl_type, reduction="sum")
+    low_top_loss = kl_div(log_p1_student, log_p1_teacher,
+                          temperature, kl_type, reduction="sum")
 
     return low_top_loss
+
 
 def _loss_low_other(logits_student, logits_teacher, mask_u1, mask_u2, temperature, kl_type):
     soft_logits_student = logits_student / temperature
@@ -82,7 +85,7 @@ def _loss_low_other(logits_student, logits_teacher, mask_u1, mask_u2, temperatur
 
     low_other_loss = kl_div(
         log_p2_student, log_p2_teacher, temperature, kl_type, reduction="sum")
-    
+
     return low_other_loss
 
 
@@ -93,9 +96,11 @@ def _loss_kd(logits_student, logits_teacher, temperature):
     log_p_student = F.log_softmax(soft_logits_student, dim=1)
     log_p_teacher = F.log_softmax(soft_logits_teacher, dim=1)
 
-    loss = kl_div(log_p_student, log_p_teacher, temperature, kl_type="forward", reduction="sum") 
+    loss = kl_div(log_p_student, log_p_teacher, temperature,
+                  kl_type="forward", reduction="sum")
 
     return loss
+
 
 class GDKD(Distiller):
     def __init__(self, student, teacher, cfg):
@@ -119,23 +124,23 @@ class GDKD(Distiller):
         self.low_topk_grad_list = []
         self.low_other_grad_list = []
         self.target_list = []
-        self.logits_t_list =[]
+        self.logits_t_list = []
         self.logits_s_list = []
         self.kd_grad_list = []
 
     def save_record(self, path):
         high_grad_list = torch.cat(self.high_grad_list, dim=0).numpy()
         low_topk_grad_list = torch.cat(self.low_topk_grad_list, dim=0).numpy()
-        low_other_grad_list = torch.cat(self.low_other_grad_list, dim=0).numpy()
+        low_other_grad_list = torch.cat(
+            self.low_other_grad_list, dim=0).numpy()
         target_list = torch.cat(self.target_list, dim=0).numpy()
         logits_t_list = torch.cat(self.logits_t_list, dim=0).numpy()
         logits_s_list = torch.cat(self.logits_s_list, dim=0).numpy()
         kd_grad_list = torch.cat(self.kd_grad_list, dim=0).numpy()
 
-        folder_path=Path(path).parent
+        folder_path = Path(path).parent
         if not folder_path.exists():
             folder_path.mkdir(parents=True, exist_ok=True)
-
 
         np.savez(
             path,
@@ -146,18 +151,17 @@ class GDKD(Distiller):
             logits_s=logits_s_list,
             target=target_list,
             kd_grad=kd_grad_list
-        )    
+        )
 
     def record_grad(self, image, target, **kwargs):
         logits_student, _ = self.student(image)
         with torch.no_grad():
             logits_teacher, _ = self.teacher(image)
 
-        k=self.k
-        temperature=self.temperature
-        kl_type=self.kl_type
-        strategy=self.strategy
-
+        k = self.k
+        temperature = self.temperature
+        kl_type = self.kl_type
+        strategy = self.strategy
 
         logits_student = logits_student.detach().clone()
         logits_student.requires_grad = True
@@ -168,19 +172,22 @@ class GDKD(Distiller):
 
         mask_u1, mask_u2 = get_masks(logits_teacher, k, strategy)
 
-        high_loss = _loss_high(logits_student, logits_teacher, mask_u1, mask_u2, temperature)
+        high_loss = _loss_high(
+            logits_student, logits_teacher, mask_u1, mask_u2, temperature)
         high_loss.backward()
         high_grad = logits_student.grad.clone()
         self.high_grad_list.append(high_grad.cpu())
         logits_student.grad.zero_()
 
-        low_top_loss = _loss_low_topk(logits_student, logits_teacher, mask_u1, mask_u2, temperature, kl_type)
+        low_top_loss = _loss_low_topk(
+            logits_student, logits_teacher, mask_u1, mask_u2, temperature, kl_type)
         low_top_loss.backward()
         low_top_grad = logits_student.grad.clone()
         self.low_topk_grad_list.append(low_top_grad.cpu())
         logits_student.grad.zero_()
 
-        low_other_loss = _loss_low_other(logits_student, logits_teacher, mask_u1, mask_u2, temperature, kl_type)
+        low_other_loss = _loss_low_other(
+            logits_student, logits_teacher, mask_u1, mask_u2, temperature, kl_type)
         low_other_loss.backward()
         low_other_grad = logits_student.grad.clone()
         self.low_other_grad_list.append(low_other_grad.cpu())
@@ -191,5 +198,3 @@ class GDKD(Distiller):
         kd_grad = logits_student.grad.clone()
         self.kd_grad_list.append(kd_grad.cpu())
         logits_student.grad.zero_()
-        
-

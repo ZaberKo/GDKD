@@ -92,8 +92,6 @@ def _loss_dkd(logits_student, logits_teacher, target, alpha, beta, temperature, 
     else:
         raise ValueError("Unknown strategy: {}".format(strategy))
 
-
-
     tckd_loss = _loss_tckd(
         logits_student, logits_teacher, gt_mask, other_mask, temperature)
 
@@ -104,15 +102,6 @@ def _loss_dkd(logits_student, logits_teacher, target, alpha, beta, temperature, 
     return loss
 
 
-def _loss_dkd_ce(logits_student, logits_teacher, target, alpha, beta, temperature, mask_magnitude, kl_type, strategy):
-    _dkd_loss = dkd_loss(logits_student, logits_teacher, target,
-                         alpha, beta, temperature, mask_magnitude, kl_type, strategy)
-
-    ce_loss = F.cross_entropy(logits_student, target)
-    loss = _dkd_loss + ce_loss
-    return loss
-
-
 def _loss_kd(logits_student, logits_teacher, temperature):
     soft_logits_student = logits_student / temperature
     soft_logits_teacher = logits_teacher / temperature
@@ -120,64 +109,10 @@ def _loss_kd(logits_student, logits_teacher, temperature):
     log_p_student = F.log_softmax(soft_logits_student, dim=1)
     log_p_teacher = F.log_softmax(soft_logits_teacher, dim=1)
 
-    loss = kl_div(log_p_student, log_p_teacher, temperature, kl_type="forward", reduction="sum") 
+    loss = kl_div(log_p_student, log_p_teacher, temperature,
+                  kl_type="forward", reduction="sum")
 
     return loss
-
-
-def record_grad(logits_student, logits_teacher, target, temperature, mask_magnitude, kl_type, strategy, distiller):
-    distiller.logits_t_list.append(logits_teacher.detach().cpu())
-    distiller.logits_s_list.append(logits_student.detach().cpu())
-
-
-    logits_student = logits_student.detach().clone()
-    logits_student.requires_grad = True
-
-    # logits_teacher = logits_teacher.cpu()
-    # target = target.cpu()
-
-    if strategy == "target":
-        gt_mask = _get_gt_mask(logits_teacher, target)
-        other_mask = _get_other_mask(logits_teacher, target)
-    elif strategy == "top1":
-        gt_mask, other_mask = get_top1_masks(
-            logits_teacher, target)
-    else:
-        raise ValueError("Unknown strategy: {}".format(strategy))
-
-    distiller.target_list.append(target.cpu())
-
-
-
-    tckd_loss = _loss_tckd(
-        logits_student, logits_teacher, gt_mask, other_mask, temperature)
-    tckd_loss.backward()
-    tckd_grad = logits_student.grad.clone()
-    logits_student.grad.zero_()
-    distiller.tckd_grad_list.append(tckd_grad.cpu())
-
-
-    nckd_loss = _loss_nckd(logits_student, logits_teacher,
-                           gt_mask, other_mask, temperature, mask_magnitude, kl_type)
-    nckd_loss.backward()
-    nckd_grad = logits_student.grad.clone()
-    logits_student.grad.zero_()
-    distiller.nckd_grad_list.append(nckd_grad.cpu())
-
-    kd_loss = _loss_kd(logits_student, logits_teacher, temperature)
-    kd_loss.backward()
-    kd_grad = logits_student.grad.clone()
-    logits_student.grad.zero_()
-    distiller.kd_grad_list.append(kd_grad.cpu())
-
-
-
-
-def dkd_loss(logits_student, logits_teacher, target, alpha, beta, temperature, mask_magnitude, kl_type, strategy="target"):
-    return _loss_dkd(
-        logits_student, logits_teacher, target, alpha, beta,
-        temperature, mask_magnitude, kl_type, strategy="target"
-    )
 
 
 class DKDMod(Distiller):
@@ -203,7 +138,7 @@ class DKDMod(Distiller):
         self.tckd_grad_list = []
         self.nckd_grad_list = []
         self.target_list = []
-        self.logits_t_list =[]
+        self.logits_t_list = []
         self.logits_s_list = []
         self.kd_grad_list = []
 
@@ -215,10 +150,9 @@ class DKDMod(Distiller):
         logits_s_list = torch.cat(self.logits_s_list, dim=0).numpy()
         kd_grad_list = torch.cat(self.kd_grad_list, dim=0).numpy()
 
-        folder_path=Path(path).parent
+        folder_path = Path(path).parent
         if not folder_path.exists():
             folder_path.mkdir(parents=True, exist_ok=True)
-
 
         np.savez(
             # f"exp/grad/resnet32x4_8x4_grad_epoch{epoch}{suffix}.npz",
@@ -230,21 +164,49 @@ class DKDMod(Distiller):
             target=target_list,
             kd_grad=kd_grad_list
         )
-        
 
     def record_grad(self, image, target):
         logits_student, _ = self.student(image)
         with torch.no_grad():
             logits_teacher, _ = self.teacher(image)
 
-        record_grad(
-            logits_student,
-            logits_teacher,
-            target,
-            temperature=self.temperature,
-            mask_magnitude=self.mask_magnitude,
-            kl_type=self.kl_type,
-            strategy=self.strategy,
-            distiller=self
-        )
+        self.logits_t_list.append(logits_teacher.detach().cpu())
+        self.logits_s_list.append(logits_student.detach().cpu())
 
+        logits_student = logits_student.detach().clone()
+        logits_student.requires_grad = True
+
+        # logits_teacher = logits_teacher.cpu()
+        # target = target.cpu()
+
+        if self.strategy == "target":
+            gt_mask = _get_gt_mask(logits_teacher, target)
+            other_mask = _get_other_mask(logits_teacher, target)
+        elif self.strategy == "top1":
+            gt_mask, other_mask = get_top1_masks(
+                logits_teacher, target)
+        else:
+            raise ValueError("Unknown strategy: {}".format(self.strategy))
+
+        self.target_list.append(target.cpu())
+
+        # record grads
+        tckd_loss = _loss_tckd(
+            logits_student, logits_teacher, gt_mask, other_mask, self.temperature)
+        tckd_grad = torch.autograd.grad(
+            tckd_loss, logits_student
+        )[0]
+        self.tckd_grad_list.append(tckd_grad.detach().cpu())
+
+        nckd_loss = _loss_nckd(logits_student, logits_teacher,
+                               gt_mask, other_mask, self.temperature, self.mask_magnitude, self.kl_type)
+        nckd_grad = torch.autograd.grad(
+            nckd_loss, logits_student
+        )[0]
+        self.nckd_grad_list.append(nckd_grad.detach().cpu())
+
+        kd_loss = _loss_kd(logits_student, logits_teacher, self.temperature)
+        kd_grad = torch.autograd.grad(
+            kd_loss, logits_student
+        )[0]
+        self.kd_grad_list.append(kd_grad.detach().cpu())

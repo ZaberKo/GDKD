@@ -4,6 +4,7 @@ import torch.nn.functional as F
 from ..DIST import DIST, inter_class_relation, intra_class_relation
 from ..GDKD import GDKD, gdkd_loss
 
+
 class DIST_GDKD(DIST):
     def __init__(self, student, teacher, cfg):
         super(DIST_GDKD, self).__init__(student, teacher, cfg)
@@ -22,14 +23,15 @@ class DIST_GDKD(DIST):
         # losses
         loss_ce = self.ce_loss_weight * F.cross_entropy(logits_student, target)
 
-
         y_s = F.softmax(logits_student / self.temperature, dim=1)
         y_t = F.softmax(logits_teacher / self.temperature, dim=1)
-        loss_dist_inter = inter_class_relation(y_s, y_t) * (self.temperature**2)
-        loss_dist_intra = intra_class_relation(y_s, y_t) * (self.temperature**2)
+        loss_dist_inter = inter_class_relation(
+            y_s, y_t) * (self.temperature**2)
+        loss_dist_intra = intra_class_relation(
+            y_s, y_t) * (self.temperature**2)
         self.dist_inter_loss = loss_dist_inter.detach()
         self.dist_intra_loss = loss_dist_intra.detach()
-        
+
         loss_gdkd, self.high_loss, self.low_top_loss, self.low_other_loss = gdkd_loss(
             logits_student,
             logits_teacher,
@@ -43,7 +45,8 @@ class DIST_GDKD(DIST):
             kl_type="forward"
         )
 
-        loss_gdkd = min(kwargs["epoch"] / self.gdkd_warmup_epochs, 1.0) * loss_gdkd
+        loss_gdkd = min(kwargs["epoch"] /
+                        self.gdkd_warmup_epochs, 1.0) * loss_gdkd
 
         losses_dict = {
             "loss_ce": loss_ce,
