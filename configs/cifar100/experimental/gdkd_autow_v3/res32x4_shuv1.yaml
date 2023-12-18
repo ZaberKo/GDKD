@@ -1,11 +1,11 @@
 EXPERIMENT:
   NAME: ""
-  TAG: "gdkd-autow,vgg13,mv2"
+  TAG: "gdkd-autow-v31,res32x4,shuv1"
   PROJECT: "cifar100_baselines_experimental"
 DISTILLER:
   TYPE: "GDKDAutoW"
-  TEACHER: "vgg13"
-  STUDENT: "MobileNetV2"
+  TEACHER: "resnet32x4"
+  STUDENT: "ShuffleV1"
 SOLVER:
   BATCH_SIZE: 64
   EPOCHS: 240
@@ -16,4 +16,6 @@ SOLVER:
   MOMENTUM: 0.9
   TYPE: "SGD"
 GDKDAutoW:
-  M2: 9.0
+  MODE: "v3"
+  M1: 3.0
+  W2: 8.0

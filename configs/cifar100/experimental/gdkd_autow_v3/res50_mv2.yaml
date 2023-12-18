@@ -1,19 +1,21 @@
 EXPERIMENT:
   NAME: ""
-  TAG: "gdkd-autow,res110,res32"
+  TAG: "gdkd-autow-v31,res50,mv2"
   PROJECT: "cifar100_baselines_experimental"
 DISTILLER:
   TYPE: "GDKDAutoW"
-  TEACHER: "resnet110"
-  STUDENT: "resnet32"
+  TEACHER: "ResNet50"
+  STUDENT: "MobileNetV2"
 SOLVER:
   BATCH_SIZE: 64
   EPOCHS: 240
-  LR: 0.05
+  LR: 0.01
   LR_DECAY_STAGES: [150, 180, 210]
   LR_DECAY_RATE: 0.1
   WEIGHT_DECAY: 0.0005
   MOMENTUM: 0.9
   TYPE: "SGD"
 GDKDAutoW:
-  M2: 3.0
+  MODE: "v3"
+  M1: 2.0
+  W2: 8.0

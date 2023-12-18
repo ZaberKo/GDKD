@@ -1,19 +1,21 @@
 EXPERIMENT:
   NAME: ""
-  TAG: "gdkd-autow1,res56,res20"
+  TAG: "gdkd-autow-v31,wrn_40_2,shuv1"
   PROJECT: "cifar100_baselines_experimental"
 DISTILLER:
-  TYPE: "GDKDAutoW1"
-  TEACHER: "resnet56"
-  STUDENT: "resnet20"
+  TYPE: "GDKDAutoW"
+  TEACHER: "wrn_40_2"
+  STUDENT: "ShuffleV1"
 SOLVER:
   BATCH_SIZE: 64
   EPOCHS: 240
-  LR: 0.05
+  LR: 0.01
   LR_DECAY_STAGES: [150, 180, 210]
   LR_DECAY_RATE: 0.1
   WEIGHT_DECAY: 0.0005
   MOMENTUM: 0.9
   TYPE: "SGD"
-GDKDAutoW1:
-  W2: 2.0
+GDKDAutoW:
+  MODE: "v3"
+  M1: 6.0
+  W2: 6.0

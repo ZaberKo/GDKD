@@ -177,7 +177,8 @@
                 "--cfg",
                 // "configs/cifar100/experimental/gdkd_autow/res32x4_res8x4.yaml",
                 // "configs/cifar100/experimental/reviewkd_gdkd/res32x4_res8x4.yaml",
-                "configs/cifar100/experimental/dist_gdkd/res32x4_res8x4.yaml",
+                // "configs/cifar100/experimental/dist_gdkd/res32x4_res8x4.yaml",
+                "configs/cifar100/experimental/gdkd_autow_v1/res32x4_res8x4.yaml",
                 "LOG.WANDB",
                 "False",
                 // "GDKDAutoW.M", "4.0"

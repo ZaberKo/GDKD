@@ -1,9 +1,9 @@
 EXPERIMENT:
   NAME: ""
-  TAG: "gdkd-autow1,res110,res32"
+  TAG: "gdkd-autow-v2,res110,res32"
   PROJECT: "cifar100_baselines_experimental"
 DISTILLER:
-  TYPE: "GDKDAutoW1"
+  TYPE: "GDKDAutoW"
   TEACHER: "resnet110"
   STUDENT: "resnet32"
 SOLVER:
@@ -15,5 +15,7 @@ SOLVER:
   WEIGHT_DECAY: 0.0005
   MOMENTUM: 0.9
   TYPE: "SGD"
-GDKDAutoW1:
-  W2: 2.0
+GDKDAutoW:
+  MODE: "v2"
+  W1: 1.0
+  M2: 2.0

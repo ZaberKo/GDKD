@@ -1,11 +1,11 @@
 EXPERIMENT:
   NAME: ""
-  TAG: "gdkd-autow,wrn_40_2,wrn_16_2"
+  TAG: "gdkd-autow-v31,res110,res32"
   PROJECT: "cifar100_baselines_experimental"
 DISTILLER:
   TYPE: "GDKDAutoW"
-  TEACHER: "wrn_40_2"
-  STUDENT: "wrn_16_2"
+  TEACHER: "resnet110"
+  STUDENT: "resnet32"
 SOLVER:
   BATCH_SIZE: 64
   EPOCHS: 240
@@ -16,4 +16,6 @@ SOLVER:
   MOMENTUM: 0.9
   TYPE: "SGD"
 GDKDAutoW:
-  M2: 9.0
+  MODE: "v3"
+  M1: 3.0
+  W2: 1.0

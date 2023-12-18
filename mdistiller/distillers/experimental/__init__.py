@@ -6,7 +6,7 @@ from .SGDKD import SGDKD
 from .ADKD import ADKD
 from .GDKDAutok import GDKDAutok
 from .GDKD_perclass_k import GDKDPerClassK
-from .GDKDAutoW import GDKDAutoW, GDKDAutoW1
+from .GDKDAutoW import GDKDAutoW
 from .ReviewKD_GDKD import ReviewKD_GDKD
 from .DIST_GDKD import DIST_GDKD
 
@@ -19,7 +19,6 @@ distiller_dict.update({
     "GDKDAutok": GDKDAutok,
     "GDKDPerClassK": GDKDPerClassK,
     "GDKDAutoW": GDKDAutoW,
-    "GDKDAutoW1": GDKDAutoW1,
     "REVIEWKD_GDKD": ReviewKD_GDKD,
     "DIST_GDKD": DIST_GDKD
 })
@@ -77,18 +76,10 @@ CFG.GDKDPerClassK.WARMUP = 20
 CFG.GDKDAutoW = CN()
 CFG.GDKDAutoW.CE_WEIGHT = 1.0
 CFG.GDKDAutoW.M1 = 1.0
-CFG.GDKDAutoW.M2 = 12.0
+CFG.GDKDAutoW.M2 = 1.0
+CFG.GDKDAutoW.W1 = 1.0
+CFG.GDKDAutoW.W2 = 1.0
+CFG.GDKDAutoW.MODE = "v1"
 CFG.GDKDAutoW.TOPK = 5
-CFG.GDKDAutoW.STRATEGY = "best" # or "worst"
-CFG.GDKDAutoW.KL_TYPE = "forward"
 CFG.GDKDAutoW.T = 4.0
 CFG.GDKDAutoW.WARMUP = 20
-
-CFG.GDKDAutoW1 = CN()
-CFG.GDKDAutoW1.CE_WEIGHT = 1.0
-CFG.GDKDAutoW1.W2 = 8.0
-CFG.GDKDAutoW1.TOPK = 5
-CFG.GDKDAutoW1.STRATEGY = "best" # or "worst"
-CFG.GDKDAutoW1.KL_TYPE = "forward"
-CFG.GDKDAutoW1.T = 4.0
-CFG.GDKDAutoW1.WARMUP = 20
