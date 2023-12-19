@@ -87,8 +87,7 @@ def get_imagenet_dataloaders(train: bool, batch_size,
         else:
             train_transform = get_imagenet_train_transform()
 
-        train_folder = os.path.join(imagenet_data_folder, 'train')
-        train_set = ImageNet(train_folder, transform=train_transform)
+        train_set = ImageNet(imagenet_data_folder, split='train', transform=train_transform)
 
         train_loader = torch.utils.data.DataLoader(
             train_set,

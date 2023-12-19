@@ -29,6 +29,7 @@ if __name__ == "__main__":
         choices=["cifar100", "cifar100_aug","imagenet"],
     )
     parser.add_argument("--batch_size", type=int, default=64)
+    parser.add_argument("--aug_teacher", action="store_true")
     args = parser.parse_args()
 
     if args.dataset == "cifar100_aug":
@@ -36,6 +37,9 @@ if __name__ == "__main__":
         cfg.DATASET.TYPE = "cifar100"
     else:
         cfg.DATASET.TYPE = args.dataset
+
+    cfg.DISTILLER.AUG_TEACHER = args.aug_teacher
+
     cfg.DATASET.TEST.BATCH_SIZE = args.batch_size
     cfg.DISTILLER.TYPE = "NONE"
 

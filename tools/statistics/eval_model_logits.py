@@ -93,8 +93,7 @@ def validate(dataloader, model, num_classes):
     with torch.no_grad():
         for i, data in enumerate(dataloader):
             image, target = data[:2]
-            image = image.float()
-            image = image.cuda(non_blocking=True)
+            image = image.float().cuda(non_blocking=True)
             # target = target.cuda(non_blocking=True)
             logits, feats = model(image)
             logits = logits.cpu()
