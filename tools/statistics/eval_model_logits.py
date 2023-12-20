@@ -81,12 +81,15 @@ def validate_by_category(dataloader, model, num_classes):
 
     return res_logits, res_feats
 
-def validate(dataloader, model, num_classes):
+def validate(dataloader, model, num_classes, store_feats=False):
     model.eval()
 
     logits_arr = []
-    feats_arr = []
     labels_arr = []
+
+    if store_feats:
+        feats_arr = []
+
     correct_dict = defaultdict(list)
 
     pbar = tqdm(total=len(dataloader))
@@ -97,13 +100,15 @@ def validate(dataloader, model, num_classes):
             # target = target.cuda(non_blocking=True)
             logits, feats = model(image)
             logits = logits.cpu()
-            pooled_feat = feats['pooled_feat'].cpu()
+            
 
             correct_flags, = accuracy(logits, target, topk=(1,))
 
             logits_arr.append(logits)
-            feats_arr.append(pooled_feat)
             labels_arr.append(target)
+            if store_feats:
+                pooled_feat = feats['pooled_feat'].cpu()
+                feats_arr.append(pooled_feat)
 
             for j in range(num_classes):
                 correct_dict[j].append(correct_flags[target == j])
@@ -126,9 +131,11 @@ def validate(dataloader, model, num_classes):
 
     res=dict(
         logits=torch.cat(logits_arr).numpy(),
-        feats=torch.cat(feats_arr).numpy(),
         labels=torch.cat(labels_arr).numpy()
     )
+
+    if store_feats:
+        res['feats'] = torch.cat(feats_arr).numpy()
 
     return res
 
@@ -171,7 +178,7 @@ def main(cfg, args):
 
     model.cuda()
 
-    res = validate(dataloader, model, num_classes)
+    res = validate(dataloader, model, num_classes, store_feats=not args.no_feats)
 
     path = Path(args.save_dir).expanduser()
     if not path.exists():
@@ -194,6 +201,8 @@ if __name__ == "__main__":
     parser.add_argument("--save-dir", type=str, default="exp/kd_logits_data")
     # parser.add_argument("--save-prefix", type=str)
     parser.add_argument("--save-name", type=str)
+    parser.add_argument("--no-feats", action="store_true")
+    parser.add_argument("opts", nargs="*")
 
     args = parser.parse_args()
     if args.dataset in ["imagenet", "ti", "cub2011"]:
@@ -207,8 +216,10 @@ if __name__ == "__main__":
 
     if args.config is not None:
         cfg.merge_from_other_cfg(Path(args.config).expanduser())
+    else:
+        cfg.merge_from_file(cfg_path)
 
-    cfg.merge_from_file(cfg_path)
+    cfg.merge_from_list(args.opts)
     cfg.DISTILLER.TYPE = "NONE"
     cfg.DISTILLER.TEACHER = args.model
     # cfg.merge_from_list(args.opts)
