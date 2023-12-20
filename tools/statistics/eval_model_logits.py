@@ -81,7 +81,8 @@ def validate_by_category(dataloader, model, num_classes):
 
     return res_logits, res_feats
 
-def validate(dataloader, model, num_classes, store_feats=False):
+
+def validate(dataloader, model, num_classes, save_path, store_feats=False, bucket_size=None):
     model.eval()
 
     logits_arr = []
@@ -91,16 +92,38 @@ def validate(dataloader, model, num_classes, store_feats=False):
         feats_arr = []
 
     correct_dict = defaultdict(list)
+    bucket_id = 0
+
+    def save_result(path, bucket_id=None):
+        res = dict(
+            logits=torch.cat(logits_arr).numpy(),
+            labels=torch.cat(labels_arr).numpy()
+        )
+
+        if store_feats:
+            res['feats'] = torch.cat(feats_arr).numpy()
+
+        if bucket_id is not None:
+            filename = path.stem + \
+                f"_bucket{bucket_id}" + path.suffix
+
+            path = path.parent/filename
+        np.savez_compressed(path, **res)
+
+    def reset():
+        logits_arr.clear()
+        labels_arr.clear()
+        if store_feats:
+            feats_arr.clear()
 
     pbar = tqdm(total=len(dataloader))
     with torch.no_grad():
-        for i, data in enumerate(dataloader):
+        for i, data in enumerate(dataloader, 1):
             image, target = data[:2]
             image = image.float().cuda(non_blocking=True)
             # target = target.cuda(non_blocking=True)
             logits, feats = model(image)
             logits = logits.cpu()
-            
 
             correct_flags, = accuracy(logits, target, topk=(1,))
 
@@ -112,6 +135,11 @@ def validate(dataloader, model, num_classes, store_feats=False):
 
             for j in range(num_classes):
                 correct_dict[j].append(correct_flags[target == j])
+
+            if bucket_size is not None and i % bucket_size == 0:
+                save_result(save_path, bucket_id=bucket_id)
+                reset()
+                bucket_id += 1
 
             pbar.update()
     pbar.close()
@@ -127,17 +155,11 @@ def validate(dataloader, model, num_classes, store_feats=False):
     acc = torch.mean(torch.cat(currect_tuple))
     print(f"Total accuracy: {acc:.4f}")
 
-    
-
-    res=dict(
-        logits=torch.cat(logits_arr).numpy(),
-        labels=torch.cat(labels_arr).numpy()
-    )
-
-    if store_feats:
-        res['feats'] = torch.cat(feats_arr).numpy()
-
-    return res
+    if bucket_size is not None:
+        if len(logits_arr) > 0:
+            save_result(save_path, bucket_id)
+    else:
+        save_result(save_path)
 
 
 def get_filename(cfg, args):
@@ -157,6 +179,7 @@ def get_filename(cfg, args):
     filename += ".npz"
 
     return filename
+
 
 def main(cfg, args):
 
@@ -178,20 +201,19 @@ def main(cfg, args):
 
     model.cuda()
 
-    res = validate(dataloader, model, num_classes, store_feats=not args.no_feats)
+    save_path = Path(args.save_dir).expanduser()
+    if not save_path.exists():
+        save_path.mkdir(parents=True)
+    save_path = save_path / get_filename(cfg, args)
 
-    path = Path(args.save_dir).expanduser()
-    if not path.exists():
-        path.mkdir(parents=True)
-
-    np.savez_compressed(
-        path / get_filename(cfg, args),
-        **res)
+    validate(dataloader, model, num_classes,
+             save_path, store_feats=not args.no_feats, bucket_size=args.bucket_size)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset", type=str, default="imagenet", choices=['imagenet', 'cifar100', 'cifar100_aug', 'ti', 'cub2011'])
+    parser.add_argument("--dataset", type=str, default="imagenet",
+                        choices=['imagenet', 'cifar100', 'cifar100_aug', 'ti', 'cub2011'])
     parser.add_argument("--model", type=str, default="ResNet34")
     parser.add_argument("--model-path", type=str, default="")
     parser.add_argument("--train", action="store_true", help="use train set")
@@ -202,6 +224,7 @@ if __name__ == "__main__":
     # parser.add_argument("--save-prefix", type=str)
     parser.add_argument("--save-name", type=str)
     parser.add_argument("--no-feats", action="store_true")
+    parser.add_argument("--bucket-size", type=int)
     parser.add_argument("opts", nargs="*")
 
     args = parser.parse_args()
