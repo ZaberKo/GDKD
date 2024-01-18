@@ -127,6 +127,39 @@ def get_train_speed(trainer, epochs=1):
     print(f'Average train speed per iter: {timer}')
 
 
+
+def get_train_speed2(trainer, epochs=1):
+    timer = Timer()
+    trainer.distiller.train()
+
+    torch.cuda.synchronize()
+
+    timer_all = Timer()
+    with timer_all:
+        for epoch in range(0, epochs):
+            with tqdm(total=len(trainer.train_loader), desc=f"Epoch {epoch+1}/{epochs}") as pbar:
+                dataloader=iter(trainer.train_loader)
+                for i in range(len(trainer.train_loader)):
+                    with timer:
+                        data = next(dataloader)
+                        image, target, other_data_dict = trainer._preprocess_data(data)
+                        # forward
+                        preds, losses_dict = trainer.distiller(
+                            image=image, target=target, epoch=epoch, **other_data_dict)
+
+                        # backward
+                        loss = sum([l.mean() for l in losses_dict.values()])
+                        loss.backward()
+                        trainer.optimizer.step()
+                    pbar.update(1)
+                    # pbar.set_description(f'[train speed: {timer}]')
+                    pbar.set_postfix_str(f'train speed: {timer}')
+        torch.cuda.synchronize()
+
+    print(f'Average train speed per iter: {timer}')
+    avg_time=timer_all.time/(epochs*len(trainer.train_loader))
+    print(f'Average train speed per iter (all): {avg_time*1000:.2f}ms')
+
 def main(cfg, epochs, opts):
     experiment_name = cfg.EXPERIMENT.NAME
     if experiment_name == "":
@@ -139,7 +172,7 @@ def main(cfg, epochs, opts):
         experiment_name += "|"+",".join(addtional_tags)
 
     # cfg & loggers
-    show_cfg(cfg)
+    # show_cfg(cfg)
     # init dataloader & models
     train_loader, val_loader, num_data, num_classes = get_dataset(cfg)
 
@@ -176,7 +209,7 @@ def main(cfg, epochs, opts):
         experiment_name, distiller, train_loader, val_loader, cfg
     )
 
-    get_train_speed(trainer, epochs=epochs)
+    # get_train_speed2(trainer, epochs=epochs)
 
     print("="*10)
 

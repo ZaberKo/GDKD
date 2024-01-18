@@ -11,8 +11,10 @@
             "module": "tools.eval",
             "justMyCode": true,
             "args": [
-                "-m", "resnet32x4",
+                // "-m", "resnet32x4",
+                "-m", "resnet110",
                 "-d", "cifar100",
+                // "--aug_teacher"
             ]
         },
         {
