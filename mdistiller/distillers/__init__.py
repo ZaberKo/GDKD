@@ -14,6 +14,7 @@ from .ReviewKD import ReviewKD
 from .DKD import DKD
 from .DKDMod import DKDMod
 from .GDKD import GDKD
+from .GDKD3 import GDKD3
 from .DIST import DIST
 
 from ..models import get_model
@@ -35,6 +36,7 @@ distiller_dict = {
     "DKD": DKD,
     "DKDMod": DKDMod,
     "GDKD": GDKD,
+    "GDKD3": GDKD3,
     "DIST": DIST,
 }
 
