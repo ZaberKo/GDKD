@@ -36,8 +36,6 @@ def dist_loss(logits_student, logits_teacher, T, beta, gamma):
 
 
 class DIST(Distiller):
-    """DKD with some new losses"""
-
     def __init__(self, student, teacher, cfg):
         super(DIST, self).__init__(student, teacher)
         self.ce_loss_weight = cfg.DIST.CE_WEIGHT
