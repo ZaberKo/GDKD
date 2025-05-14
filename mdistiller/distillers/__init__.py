@@ -18,6 +18,7 @@ from .GDKD3 import GDKD3
 from .DIST import DIST
 
 from ..models import get_model
+from mdistiller.engine.utils import load_checkpoint
 
 distiller_dict = {
     "NONE": Vanilla,
@@ -47,7 +48,14 @@ def get_distiller(cfg, **kwargs):
     if cfg.DISTILLER.TYPE == "NONE":
         distiller = Vanilla(model_student)
     else:
-        model_teacher = get_model(cfg, cfg.DISTILLER.TEACHER, pretrained=True)
+        if cfg.DISTILLER.TEACHER_WEIGHTS:
+            model_teacher = get_model(cfg, cfg.DISTILLER.TEACHER, pretrained=False)
+            model_teacher.load_state_dict(
+                load_checkpoint(cfg.DISTILLER.TEACHER_WEIGHTS), strict=True
+            )
+        else:
+            # use default teacher weights
+            model_teacher = get_model(cfg, cfg.DISTILLER.TEACHER, pretrained=True)
 
         if cfg.DISTILLER.TYPE == "CRD":
             distiller = CRD(
