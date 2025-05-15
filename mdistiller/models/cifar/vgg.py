@@ -230,6 +230,34 @@ def vgg19_bn(**kwargs):
     return model
 
 
+def vgg19_bn_85(num_classes=100, **kwargs):
+    """VGG 19 pruning (0.8518) model"""
+    cfg_kd_E_pr25 = [
+        [45, 29],
+        [81, 77],
+        [147, 129, 128, 126],
+        [227, 156, 86, 9],
+        [2, 2, 3, 6],
+    ]
+    model = VGG(cfg_kd_E_pr25, batch_norm=True, num_classes=num_classes, **kwargs)
+    model.classifier = nn.Linear(6, num_classes)
+    return model
+
+
+def vgg19_bn_69(num_classes=100, **kwargs):
+    """VGG 19 pruning (0.6867) model"""
+    cfg_kd_E_pr20 = [
+        [49, 40],
+        [100, 98],
+        [191, 183, 181, 180],
+        [345, 305, 257, 102],
+        [29, 25, 46, 57],
+    ]
+    model = VGG(cfg_kd_E_pr20, batch_norm=True, num_classes=num_classes, **kwargs)
+    model.classifier = nn.Linear(57, num_classes)
+    return model
+
+
 if __name__ == "__main__":
     import torch
 

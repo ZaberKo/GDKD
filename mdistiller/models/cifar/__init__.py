@@ -12,7 +12,7 @@ from .resnet import (
 )
 from .resnetv2 import ResNet50, ResNet18
 from .wrn import wrn_16_1, wrn_16_2, wrn_40_1, wrn_40_2
-from .vgg import vgg19_bn, vgg16_bn, vgg13_bn, vgg11_bn, vgg8_bn
+from .vgg import vgg19_bn, vgg16_bn, vgg13_bn, vgg11_bn, vgg8_bn, vgg19_bn_85, vgg19_bn_69
 from .mobilenetv2 import mobile_half
 from .ShuffleNetv1 import ShuffleV1
 from .ShuffleNetv2 import ShuffleV2
@@ -64,6 +64,8 @@ cifar100_model_dict = {
     "vgg11": (vgg11_bn, None),
     "vgg16": (vgg16_bn, None),
     "vgg19": (vgg19_bn, None),
+    "vgg19_85": (vgg19_bn_85, None),
+    "vgg19_69": (vgg19_bn_69, None), 
     "MobileNetV2": (mobile_half, None),
     "ShuffleV1": (ShuffleV1, None),
     "ShuffleV2": (ShuffleV2, None),
