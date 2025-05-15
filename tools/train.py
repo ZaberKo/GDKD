@@ -23,11 +23,11 @@ def main(cfg, resume, opts, group_flag=False, id=""):
     if experiment_name == "":
         experiment_name = cfg.EXPERIMENT.TAG
     tags = cfg.EXPERIMENT.TAG.split(",")
-    if opts:
-        addtional_tags = ["{}:{}".format(k, v)
-                          for k, v in zip(opts[::2], opts[1::2])]
-        tags += addtional_tags
-        experiment_name += "|"+",".join(addtional_tags)
+    # if opts:
+    #     addtional_tags = ["{}:{}".format(k, v)
+    #                       for k, v in zip(opts[::2], opts[1::2])]
+        # tags += addtional_tags
+        # experiment_name += "|"+",".join(addtional_tags)
 
     # experiment_name = f"{cfg.EXPERIMENT.PROJECT}/{experiment_name}"
     # experiment_name = cfg.EXPERIMENT.PROJECT + "/" + experiment_name

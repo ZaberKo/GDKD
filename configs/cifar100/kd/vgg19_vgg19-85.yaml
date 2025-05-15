@@ -1,6 +1,6 @@
 EXPERIMENT:
   NAME: ""
-  TAG: "kd,vgg13,vgg8"
+  TAG: "kd,vgg19,vgg19-85"
   PROJECT: "cifar100_baselines"
 DISTILLER:
   TYPE: "KD"
