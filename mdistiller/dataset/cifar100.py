@@ -7,11 +7,13 @@ from PIL import Image
 
 
 from .transforms.cutout import Cutout
+from .datasplit import DatasetTrainValSplit
 
 
 def get_data_folder():
-    data_folder = os.path.join(os.path.dirname(
-        os.path.abspath(__file__)), "../../data/cifar100")
+    data_folder = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "../../data/cifar100"
+    )
     if not os.path.isdir(data_folder):
         os.makedirs(data_folder)
     return data_folder
@@ -111,8 +113,7 @@ class CIFAR100InstanceSample(datasets.CIFAR100):
                 pos_idx = pos_idx[0]
             else:
                 raise NotImplementedError(self.mode)
-            replace = True if self.k > len(
-                self.cls_negative[target]) else False
+            replace = True if self.k > len(self.cls_negative[target]) else False
             neg_idx = np.random.choice(
                 self.cls_negative[target], self.k, replace=replace
             )
@@ -128,16 +129,16 @@ def get_cifar100_train_transform_with_autoaugment():
             AutoAugment(AutoAugmentPolicy.CIFAR10, fill=128),
             transforms.ToTensor(),
             Cutout(n_holes=1, length=16),
-            transforms.Normalize(
-                (0.5071, 0.4867, 0.4408), (0.2675, 0.2565, 0.2761)),
+            transforms.Normalize((0.5071, 0.4867, 0.4408), (0.2675, 0.2565, 0.2761)),
         ]
     )
 
     return train_transform
 
+
 def get_cifar100_train_transform_with_randomaugment():
     from torchvision.transforms import RandAugment
-    
+
     train_transform = transforms.Compose(
         [
             transforms.RandomCrop(32, padding=4),
@@ -145,8 +146,7 @@ def get_cifar100_train_transform_with_randomaugment():
             RandAugment(2, 10),
             transforms.ToTensor(),
             Cutout(n_holes=1, length=16),
-            transforms.Normalize(
-                (0.5071, 0.4867, 0.4408), (0.2675, 0.2565, 0.2761)),
+            transforms.Normalize((0.5071, 0.4867, 0.4408), (0.2675, 0.2565, 0.2761)),
         ]
     )
 
@@ -159,8 +159,7 @@ def get_cifar100_train_transform():
             transforms.RandomCrop(32, padding=4),
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
-            transforms.Normalize((0.5071, 0.4867, 0.4408),
-                                 (0.2675, 0.2565, 0.2761)),
+            transforms.Normalize((0.5071, 0.4867, 0.4408), (0.2675, 0.2565, 0.2761)),
         ]
     )
 
@@ -171,13 +170,14 @@ def get_cifar100_test_transform():
     return transforms.Compose(
         [
             transforms.ToTensor(),
-            transforms.Normalize((0.5071, 0.4867, 0.4408),
-                                 (0.2675, 0.2565, 0.2761)),
+            transforms.Normalize((0.5071, 0.4867, 0.4408), (0.2675, 0.2565, 0.2761)),
         ]
     )
 
 
-def get_cifar100_dataloaders(batch_size, val_batch_size, num_workers, enhance_augment=False):
+def get_cifar100_dataloaders(
+    batch_size, val_batch_size, num_workers, enhance_augment=False
+):
     data_folder = get_data_folder()
     if enhance_augment:
         train_transform = get_cifar100_train_transform_with_autoaugment()
@@ -187,6 +187,42 @@ def get_cifar100_dataloaders(batch_size, val_batch_size, num_workers, enhance_au
     train_set = CIFAR100Instance(
         root=data_folder, download=True, train=True, transform=train_transform
     )
+    num_data = len(train_set)
+    test_set = datasets.CIFAR100(
+        root=data_folder, download=True, train=False, transform=test_transform
+    )
+
+    train_loader = DataLoader(
+        train_set, batch_size=batch_size, shuffle=True, num_workers=num_workers
+    )
+    test_loader = DataLoader(
+        test_set,
+        batch_size=val_batch_size,
+        shuffle=False,
+        num_workers=1,
+    )
+    return train_loader, test_loader, num_data
+
+
+def get_cifar100_dataloaders(
+    batch_size, val_batch_size, num_workers, enhance_augment=False
+):
+    data_folder = get_data_folder()
+    if enhance_augment:
+        train_transform = get_cifar100_train_transform_with_autoaugment()
+    else:
+        train_transform = get_cifar100_train_transform()
+    test_transform = get_cifar100_test_transform()
+    train_set = CIFAR100Instance(
+        root=data_folder, download=True, train=True, transform=train_transform
+    )
+
+    train_set = DatasetTrainValSplit(
+        train_set,
+        train_ratio=0.9,
+        train=True,
+    )
+
     num_data = len(train_set)
     test_set = datasets.CIFAR100(
         root=data_folder, download=True, train=False, transform=test_transform
@@ -225,6 +261,13 @@ def get_cifar100_dataloaders_sample(
         is_sample=True,
         percent=1.0,
     )
+
+    train_set = DatasetTrainValSplit(
+        train_set,
+        train_ratio=0.9,
+        train=True,
+    )
+
     num_data = len(train_set)
     test_set = datasets.CIFAR100(
         root=data_folder, download=True, train=False, transform=test_transform
