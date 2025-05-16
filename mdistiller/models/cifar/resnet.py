@@ -242,6 +242,14 @@ def resnet32x4(**kwargs):
     return ResNet(32, [32, 64, 128, 256], "basicblock", **kwargs)
 
 
+def resnet32x4_87(**kwargs):
+    return ResNet(32, [21, 5, 7, 21], "basicblock", **kwargs)
+
+
+def resnet32x4_92(**kwargs):
+    return ResNet(32, [23, 8, 12, 37], "basicblock", **kwargs)
+
+
 if __name__ == "__main__":
     import torch
 

@@ -9,6 +9,8 @@ from .resnet import (
     resnet110,
     resnet8x4,
     resnet32x4,
+    resnet32x4_87,
+    resnet32x4_92,
 )
 from .resnetv2 import ResNet50, ResNet18
 from .wrn import wrn_16_1, wrn_16_2, wrn_40_1, wrn_40_2
@@ -56,6 +58,8 @@ cifar100_model_dict = {
     "resnet32": (resnet32, None),
     "resnet44": (resnet44, None),
     "resnet8x4": (resnet8x4, None),
+    "resnet32x4_87": (resnet32x4_87, None),
+    "resnet32x4_92": (resnet32x4_92, None),
     "ResNet18": (ResNet18, None),
     "wrn_16_1": (wrn_16_1, None),
     "wrn_16_2": (wrn_16_2, None),
