@@ -4,3 +4,5 @@ yacs
 wandb
 tqdm
 tensorboardX
+pandas
+scipy
