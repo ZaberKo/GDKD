@@ -17,6 +17,7 @@ from .GDKD import GDKD
 from .GDKD3 import GDKD3
 from .DIST import DIST
 from .MLKD import MLKD
+from .LSKD import LSKD
 
 from ..models import get_model
 from mdistiller.engine.utils import load_checkpoint
@@ -41,6 +42,7 @@ distiller_dict = {
     "GDKD3": GDKD3,
     "DIST": DIST,
     "MLKD": MLKD,
+    "LSKD": LSKD,
 }
 
 
