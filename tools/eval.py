@@ -26,24 +26,17 @@ if __name__ == "__main__":
         "--dataset",
         type=str,
         default="cifar100",
-        choices=["cifar100", "cifar100_aug","imagenet"],
+        choices=["cifar100", "imagenet", "cub2011", "tiny-imagenet"],
     )
     parser.add_argument("--batch_size", type=int, default=64)
     parser.add_argument("--aug_teacher", action="store_true")
     args = parser.parse_args()
 
-    if args.dataset == "cifar100_aug":
-        cfg.DATASET.ENHANCE_AUGMENT = True
-        cfg.DATASET.TYPE = "cifar100"
-    else:
-        cfg.DATASET.TYPE = args.dataset
 
+    cfg.DATASET.TYPE = args.dataset
     cfg.DISTILLER.AUG_TEACHER = args.aug_teacher
-
     cfg.DATASET.TEST.BATCH_SIZE = args.batch_size
     cfg.DISTILLER.TYPE = "NONE"
-
-
 
     cfg.freeze()
 
