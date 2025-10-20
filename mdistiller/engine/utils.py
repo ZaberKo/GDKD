@@ -103,7 +103,7 @@ def save_checkpoint(obj, path):
 
 def load_checkpoint(path):
     with open(path, "rb") as f:
-        state_dict = torch.load(f, map_location="cpu")
+        state_dict = torch.load(f, map_location="cpu", weights_only=False)
 
     if "model" in state_dict:
         state_dict = state_dict["model"]
