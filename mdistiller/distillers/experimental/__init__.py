@@ -9,19 +9,23 @@ from .GDKD_perclass_k import GDKDPerClassK
 from .GDKDAutoW import GDKDAutoW
 from .ReviewKD_GDKD import ReviewKD_GDKD
 from .DIST_GDKD import DIST_GDKD
+from .LS_GDKD import LS_GDKD
 
 from mdistiller.distillers import distiller_dict
 
-distiller_dict.update({
-    "SGDKD": SGDKD,
-    "ADKD": ADKD,
-    "SKD": SKD,
-    "GDKDAutok": GDKDAutok,
-    "GDKDPerClassK": GDKDPerClassK,
-    "GDKDAutoW": GDKDAutoW,
-    "REVIEWKD_GDKD": ReviewKD_GDKD,
-    "DIST_GDKD": DIST_GDKD
-})
+distiller_dict.update(
+    {
+        "SGDKD": SGDKD,
+        "ADKD": ADKD,
+        "SKD": SKD,
+        "GDKDAutok": GDKDAutok,
+        "GDKDPerClassK": GDKDPerClassK,
+        "GDKDAutoW": GDKDAutoW,
+        "REVIEWKD_GDKD": ReviewKD_GDKD,
+        "DIST_GDKD": DIST_GDKD,
+        "LS_GDKD": LS_GDKD,
+    }
+)
 
 
 CFG.ADKD = CN()
@@ -55,7 +59,7 @@ CFG.GDKDAUTOK.CE_WEIGHT = 1.0
 CFG.GDKDAUTOK.W0 = 1.0
 CFG.GDKDAUTOK.W1 = 4.0
 CFG.GDKDAUTOK.W2 = 8.0
-CFG.GDKDAUTOK.TOPK_TH = 100 # 100 means no limit in cifar100
+CFG.GDKDAUTOK.TOPK_TH = 100  # 100 means no limit in cifar100
 CFG.GDKDAUTOK.RATIO_TH = 2.0
 CFG.GDKDAUTOK.KL_TYPE = "forward"
 CFG.GDKDAUTOK.T = 4.0
@@ -66,9 +70,9 @@ CFG.GDKDPerClassK.CE_WEIGHT = 1.0
 CFG.GDKDPerClassK.W0 = 1.0
 CFG.GDKDPerClassK.W1 = 4.0
 CFG.GDKDPerClassK.W2 = 8.0
-CFG.GDKDPerClassK.PREBUILD_TOPK_TH = 100 # 100 means no limit in cifar100
+CFG.GDKDPerClassK.PREBUILD_TOPK_TH = 100  # 100 means no limit in cifar100
 CFG.GDKDPerClassK.PREBUILD_RATIO_TH = 2.0
-CFG.GDKDPerClassK.PRELOAD_TOPK_PATH = None # eg: "./debug_topk.yaml"
+CFG.GDKDPerClassK.PRELOAD_TOPK_PATH = None  # eg: "./debug_topk.yaml"
 CFG.GDKDPerClassK.KL_TYPE = "forward"
 CFG.GDKDPerClassK.T = 4.0
 CFG.GDKDPerClassK.WARMUP = 20
