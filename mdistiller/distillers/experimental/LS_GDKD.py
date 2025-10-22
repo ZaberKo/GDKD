@@ -158,6 +158,7 @@ class LS_GDKD(Distiller):
     def __init__(self, student, teacher, cfg):
         super(LS_GDKD, self).__init__(student, teacher)
         self.ce_loss_weight = cfg.LS_GDKD.CE_WEIGHT
+        self.kd_loss_weight = cfg.LS_GDKD.KD_WEIGHT
 
         self.w0 = cfg.LS_GDKD.W0
         self.w1 = cfg.LS_GDKD.W1
@@ -189,7 +190,9 @@ class LS_GDKD(Distiller):
             kl_type=self.kl_type,
             norm_mode=self.norm_mode,
         )
-        loss_kd = min(kwargs["epoch"] / self.warmup, 1.0) * loss_gdkd
+        loss_kd = (
+            min(kwargs["epoch"] / self.warmup, 1.0) * loss_gdkd * self.kd_loss_weight
+        )
         losses_dict = {
             "loss_ce": loss_ce,
             "loss_kd": loss_kd,
