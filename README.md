@@ -44,7 +44,7 @@ WANDB_MODE=offline CUDA_VISIBLE_DEVICES=4 python train_dist.py --cfg configs/TL/
 
 - DIST: [DIST's codebase](https://github.com/hunto/DIST_KD)
 
-- Logit Standardization [LS's codebase](https://github.com/sunshangquan/logit-standardization-KD)
+- Logit Standardization: [LS's codebase](https://github.com/sunshangquan/logit-standardization-KD)
 
-- MLKD [MLKD's codebase](https://github.com/Jin-Ying/Multi-Level-Logit-Distillation)
+- MLKD: [MLKD's codebase](https://github.com/Jin-Ying/Multi-Level-Logit-Distillation)
 
